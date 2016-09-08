@@ -1,6 +1,8 @@
 <?php
 namespace App\Mapper;
 
+//TODO: Remove references to objects in the cart project we don't need anymore. i.e. App/Models/ShoppingCart
+
 use App\Lib\ECart\Helper\CrossCookie;
 use App\Models\User;
 use Illuminate\Support\Facades\Session;
