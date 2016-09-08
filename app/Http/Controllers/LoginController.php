@@ -12,6 +12,7 @@ use Config;
  */
 class LoginController extends Controller {
 
+    /** @var  UserMapper $userMapper */
     private $userMapper;
 
     private function getUserMapper()

@@ -4,24 +4,17 @@ namespace App\Mapper;
 use App\Lib\ECart\Helper\CrossCookie;
 use App\Models\User;
 use Illuminate\Support\Facades\Session;
+use App\Models\ShoppingCart;
+use \Darryldecode\Cart\CartCondition;
 use App\Models\Helpers\UserHelper;
 
-class UserFactory
+class UserObjectFactory
 {
     private $owlFactory;
     private $avalaraFactory;
     private $crossCookie;
     private $userModel;
     private $logMessage = array();
-    private $userHelper;
-
-    private function getUserHelper()
-    {
-        if (is_null($this->userHelper)) {
-            $this->userHelper = new UserHelper();
-        }
-        return $this->userHelper;
-    }
 
     public function __construct($crossCookie = null)
     {
@@ -29,11 +22,13 @@ class UserFactory
         $this->avalaraFactory = new AvalaraFactory();
         if(empty($crossCookie)) {
             $this->crossCookie = new CrossCookie();
-        } else {
+        }
+        else {
             $this->crossCookie = $crossCookie;
         }
         $this->userModel = new User();
         $this->config = app()['config'];
+        $this->shoppingCart = new ShoppingCart();
         $this->logFactory = new LogFactory();
     }
 
@@ -49,6 +44,7 @@ class UserFactory
      * @use App\Models\User::__construct()
      * @author Kunal
      */
+
     public function retrieveUserInfo($params)
     {
         $retrieveUserToken = $this->owlFactory->userLogin($params['email'], $params['password']);
@@ -56,33 +52,32 @@ class UserFactory
         if ($retrieveUserToken && isset($retrieveUserToken['meta'])) {
             switch ($retrieveUserToken['meta']['code']) {
                 case '200':
+//                    Session::set('failed_attempts', 0);
                     $userToken = $retrieveUserToken['response']['user_token'];
                     $userRefreshToken = $retrieveUserToken['response']['refresh_token'];
                     $this->crossCookie->login($userToken, $userRefreshToken);
 
-                    $userInfo = $this->owlFactory->getUserInfo($userToken);
+                    $userInfoObject = $this->owlFactory->getUserInfo($userToken);
 
-                    if(isset($userInfo['user']['Personal_Information']['user_status_code']) &&
-                        $userInfo['user']['Personal_Information']['user_status_code'] === "RESET") {
+                    if(isset($userInfoObject['user']['Personal_Information']['user_status_code']) &&
+                        $userInfoObject['user']['Personal_Information']['user_status_code'] === "RESET")
+                    {
                         Session::put("temporary_password", $params['password']);
                     }
 
-                    if(isset($userInfo['user']['Billing_Information'])) {
-                        $userBillingInfo = $userInfo['user']['Billing_Information'];
-                    } else {
+                    if(isset($userInfoObject['user']['Billing_Information']))
+                        $userBillingInfoObject = $userInfoObject['user']['Billing_Information'];
+                    else
                         $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
-                    }
 
-                    if(isset($userInfo['user']['Personal_Information'])) {
-                        $userPersonalInfo = $userInfo['user']['Personal_Information'];
-                    } else {
+                    if(isset($userInfoObject['user']['Personal_Information']))
+                        $userPersonalInfoObject = $userInfoObject['user']['Personal_Information'];
+                    else
                         $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
-                    }
-                    if (isset($userPersonalInfo)) {
-                        $this->prepareAvalaraAddressValidate($userPersonalInfo);
-                    }
 
-                    if(isset($userPersonalInfo['user_type_code']) && $userPersonalInfo['user_type_code'] != 'EXT') {
+                    $this->prepareAvalaraAddressValidate($userPersonalInfoObject);
+                    if(isset($userPersonalInfoObject['user_type_code']) && $userPersonalInfoObject['user_type_code'] != 'EXT')
+                    {
                         $errorMsg = 'You\'re not authorized to access this portal.';
                         $errorArray = array(
                             'meta_code' => 408,
@@ -93,33 +88,59 @@ class UserFactory
                         $this->logMessage['UserObjectFactory->retrieveUserInfo']['User_Type'] = $errorArray;
                         $this->logFactory->writeErrorLog($this->logMessage);
                         return json_encode($errorArray);
-                    } elseif(!isset($userPersonalInfo['user_type_code'])) {
+                    }
+                    elseif(!isset($userPersonalInfoObject['user_type_code']))
+                    {
                         $this->logMessage['UserObjectFactory->retrieveUserInfo']['User_Type'] = "Missing User Type Code";
                         $this->logFactory->writeErrorLog($this->logMessage);
-                    } else {
-                        $userPersonalInfo = $this->formatUserObjectResponse($userPersonalInfo);
+                    }
+                    else
+                    {
+                        $calculatedTaxResponse = $this->prepareTaxRequestResponse($userPersonalInfoObject);
+                        $updatedCartResponse = $this->updateCartContentsWithTax($calculatedTaxResponse);
+                        $userPersonalInfoObject = $this->formatUserObjectResponse($userPersonalInfoObject);
+
                         $errorFlag = false;
-                        if($userPersonalInfo == '' || count($userPersonalInfo) == 0) {
+                        if($userBillingInfoObject == '')
+                        {
+                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+                            $finalLoginResponse['error_code'] = 'update_user_tax';
+                            $finalLoginResponse['error_message'] = '';
+                            $errorFlag = true;
+                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
+                        }
+                        if($userPersonalInfoObject == '' || count($userPersonalInfoObject) == 0)
+                        {
                             $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                             $finalLoginResponse['error_code'] = 'update_billing_tax';
                             $finalLoginResponse['error_message'] = '';
                             $errorFlag = true;
-                            $this->logMessage['UserFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
+                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
                         }
-                        if($errorFlag == false) {
+                        if(strlen($calculatedTaxResponse['response']['TaxRate']) == 0)
+                        {
+                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+                            $finalLoginResponse['error_code'] = 'update_user_billing';
+                            $finalLoginResponse['error_message'] = '';
+                            $errorFlag = true;
+                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Tax_Information'] = "Missing Avalara Tax Information";
+                        }
+                        if($errorFlag == false)
+                        {
                             $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                             $finalLoginResponse['error_code'] = '';
                             $finalLoginResponse['error_message'] = '';
                             $this->logFactory->writeInfoLog("Login Success");
                         }
-                        $finalLoginResponse['response']['user']['Personal_Information'] = $userPersonalInfo;
-                        $finalLoginResponse['response']['user']['Billing_Information'] = $userBillingInfo;
+                        $finalLoginResponse['response']['user']['Personal_Information'] = $userPersonalInfoObject;
+                        $finalLoginResponse['response']['user']['Billing_Information'] = $userBillingInfoObject;
+                        $finalLoginResponse['response']['cart'] = $updatedCartResponse;
                         $finalLoginResponse['response']['user']['Personal_Information']['response']['user_token'] = $userToken;
 
-                        if($this->logMessage != '') {
+                        if($this->logMessage != '')
                             $this->logFactory->writeErrorLog($this->logMessage);
-                        }
-                        $this->logMessage['UserFactory->retrieveUserInfo']['Response'] = $finalLoginResponse;
+
+                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Response'] = $finalLoginResponse;
                         $this->logFactory->writeInfoLog($finalLoginResponse);
 
                         $loginResponse = $this->setUserInfoSession($finalLoginResponse);
@@ -138,6 +159,25 @@ class UserFactory
                     return json_encode($finalLoginResponse);
                     break;
                 case '403':
+//                    @TODO Enable it for failed login attempts
+//                    if(Session::get('failed_attempts'))
+//                        $failedLoginAttempts = Session::get('failed_attempts');
+//                    else
+//                        $failedLoginAttempts = 0;
+//                    $failedLoginAttempts += 1;
+//                    Session::set('failed_attempts', $failedLoginAttempts);
+//                    if($failedLoginAttempts >= 3)
+//                    {
+//                        $errorMsg = 'You\'ve exceeded maximum failed attempts! Please contact the customer support.';
+//                        $errorArray = array(
+//                            'meta_code' => 500,
+//                            'response' => array(
+//                                'message' => $errorMsg,
+//                            ),
+//                        );
+//                    }
+//                    else
+//                    {
                     $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
                     $errorArray = array(
                         'meta_code' => $retrieveUserToken['meta']['code'],
@@ -147,6 +187,8 @@ class UserFactory
                     );
                     $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $errorArray;
                     $this->logFactory->writeInfoLog($errorArray);
+
+//                    }
 
                     return json_encode($errorArray);
                     break;
@@ -178,9 +220,10 @@ class UserFactory
      * This function call OWL's Logout Endpoint passing user token which is stored in Session.
      * @return array finalLogoutResponse
      */
+
     public function logoutUser($crossCookieMock = null)
     {
-        $userHelper = $this->getUserHelper();
+        $userHelper = new UserHelper();
         $userToken = $userHelper->getUserTokenFromSession();
 
         if(strlen($userToken)!=0)
@@ -423,7 +466,7 @@ class UserFactory
 
     public function updateUserPersonalInfo($params)
     {
-        $userHelper = $this->getUserHelper();
+        $userHelper = new UserHelper();
         $userToken = $userHelper->getUserTokenFromSession();
 
         $userUpdateInfoObject = $this->owlFactory->userPersonalUpdate($params, $userToken);
@@ -557,9 +600,10 @@ class UserFactory
      */
     public function createByEmail($params)
     {
-        $userHelper = $this->getUserHelper();
+        $userHelper = new UserHelper();
         $forgotPasswordErrorArray = $userHelper->validForgotPasswordParams($params);
-        if(count($forgotPasswordErrorArray)==0) {
+        if(count($forgotPasswordErrorArray)==0)
+        {
             $forgotPasswordResponse = $this->owlFactory->sendResetPasswordEmail($params);
             $finalForgotPasswordResponse = array();
 
@@ -598,18 +642,26 @@ class UserFactory
                         $this->logFactory->writeInfoLog("Reset Password Failed. No meta code key");
                         break;
                 }
+
             }
-        } else {
+
+        }
+        else
+        {
             $finalForgotPasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-            if(isset($forgotPasswordErrorArray['email'])) {
+            if(isset($forgotPasswordErrorArray['email']))
+            {
                 $finalForgotPasswordResponse['error_code'] = 'display_error';
                 $finalForgotPasswordResponse['error_message'] = $params['email']." is not a valid email address.";
-            } else {
+            }
+            else
+            {
                 $finalForgotPasswordResponse['error_code'] = '';
                 $finalForgotPasswordResponse['error_message'] = '';
             }
             $this->logFactory->writeErrorLog($forgotPasswordErrorArray);
         }
+
         return $finalForgotPasswordResponse;
     }
 
@@ -629,11 +681,14 @@ class UserFactory
 
         $finalChangePasswordResponse = array();
 
-        if (isset($changePasswordResponse['meta']['code'])) {
-            switch ($changePasswordResponse['meta']['code']) {
+        if (isset($changePasswordResponse['meta']['code']))
+        {
+            switch ($changePasswordResponse['meta']['code'])
+            {
                 case '200':
 
-                    if(isset($changePasswordResponse['response']['success']) && $changePasswordResponse['response']['success']==1) {
+                    if(isset($changePasswordResponse['response']['success']) && $changePasswordResponse['response']['success']==1)
+                    {
                         if (Session::has("temporary_password"))
                             Session::forget("temporary_password");
                         /** Because of the successful password change
@@ -644,7 +699,9 @@ class UserFactory
                         $finalChangePasswordResponse['error_code'] = '';
                         $finalChangePasswordResponse['error_message'] = '';
                         $this->logFactory->writeInfoLog("Change Password Success");
-                    } else {
+                    }
+                    else
+                    {
                         $finalChangePasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                         $finalChangePasswordResponse['error_code'] = '';
                         $finalChangePasswordResponse['error_message'] = '';
@@ -664,14 +721,16 @@ class UserFactory
                     $this->logFactory->writeInfoLog("Change Password Failed as ". $changePasswordResponse['error'][0]);
                     break;
             }
+
         }
+
         return $finalChangePasswordResponse;
     }
 
-    private function prepareAvalaraAddressValidate($userPersonalInfo)
+    private function prepareAvalaraAddressValidate($userPersonalInfoObject)
     {
-        $userHelper = $this->getUserHelper();
-        $userLoginAddressValidation = $userHelper->areValidLoginAddressParams($userPersonalInfo['personal_address']);
+        $userHelper = new UserHelper();
+        $userLoginAddressValidation = $userHelper->areValidLoginAddressParams($userPersonalInfoObject['personal_address']);
         if(!empty($userLoginAddressValidation))
         {
             $this->logFactory->writeInfoLog($userLoginAddressValidation);
@@ -679,12 +738,12 @@ class UserFactory
         else
         {
             $avalaraParams = Array(
-                'Line1'       => $userPersonalInfo['personal_address']['address_line_1'],
-                'Line2'       => $userPersonalInfo['personal_address']['address_line_2'],
-                'City'        => $userPersonalInfo['personal_address']['city_name'],
-                'Region'      => $userPersonalInfo['personal_address']['state_code'],
-                'PostalCode'  => $userPersonalInfo['personal_address']['zip_code'],
-                'Country'     => $userPersonalInfo['personal_address']['country_code']
+                'Line1'       => $userPersonalInfoObject['personal_address']['address_line_1'],
+                'Line2'       => $userPersonalInfoObject['personal_address']['address_line_2'],
+                'City'        => $userPersonalInfoObject['personal_address']['city_name'],
+                'Region'      => $userPersonalInfoObject['personal_address']['state_code'],
+                'PostalCode'  => $userPersonalInfoObject['personal_address']['zip_code'],
+                'Country'     => $userPersonalInfoObject['personal_address']['country_code']
             );
             $validatedAddress = $this->avalaraFactory->getValidAddress($avalaraParams);
             if(isset($validatedAddress['ResultCode']) && $validatedAddress['ResultCode'] == 'Success')
@@ -694,67 +753,129 @@ class UserFactory
         }
     }
 
-    private function formatUserObjectResponse($userInfo)
+
+    private function prepareTaxRequestResponse($userPersonalInfoObject)
+    {
+        $cartDetails = $this->shoppingCart->getCartFeaturesForDisplay("UserObjectFactory->prepareTaxRequestResponse", $this->crossCookie);
+        $totalCartAmount = $cartDetails['totalD'].".".$cartDetails['totalC'];
+        $avalaraTaxParams = $this->formAvalaraTaxRequest($userPersonalInfoObject, $totalCartAmount);
+        $calculatedTax = $this->avalaraFactory->getTaxInfo($avalaraTaxParams);
+        return $calculatedTax;
+    }
+
+    private function formAvalaraTaxRequest($userPersonalInfoObject, $totalCartAmount)
+    {
+        $avalaraParams = Array
+        (
+            "DocType"      => "SalesOrder",
+            "CompanyCode"  => "DANDB",
+            "Client"       => "PHONE",
+            "DocDate"      => date("Y-m-d"),
+            "CustomerCode" => $userPersonalInfoObject['user_identifier'],
+            "Addresses" => Array
+            (
+                Array
+                (
+                    "Line1"         => $userPersonalInfoObject['personal_address']['address_line_1'],
+                    "Line2"         => $userPersonalInfoObject['personal_address']['address_line_2'],
+                    "City"          => $userPersonalInfoObject['personal_address']['city_name'],
+                    "Region"        => $userPersonalInfoObject['personal_address']['state_code'],
+                    "PostalCode"    => $userPersonalInfoObject['personal_address']['zip_code'],
+                    "Country"       => $userPersonalInfoObject['personal_address']['country_code'],
+                    "AddressCode"   => 1
+                )
+            ),
+            "Lines" => Array
+            (
+                Array
+                (
+                    "LineNo"          => 1,
+                    "DestinationCode" => 1,
+                    "OriginCode"      => 1,
+                    "Amount"          => $totalCartAmount
+                )
+            )
+        );
+        return json_encode($avalaraParams);
+    }
+
+    private function updateCartContentsWithTax($calculatedtaxResponse)
+    {
+        $updatedCart = $this->shoppingCart->updateCartWithTaxInfo($calculatedtaxResponse['response'], $this->crossCookie);
+        $updatedCartResponse = Array(
+            'subTotalD'  => isset($updatedCart['subTotalD']) ? $updatedCart['subTotalD'] : '',
+            'subTotalC'  => isset($updatedCart['subTotalC']) ? $updatedCart['subTotalC'] : '',
+            'totalD'     => isset($updatedCart['totalD']) ? $updatedCart['totalD'] : '',
+            'totalC'     => isset($updatedCart['totalC']) ? $updatedCart['totalC'] : '',
+            'taxD'       => isset($updatedCart['taxD']) ? $updatedCart['taxD'] : '',
+            'taxC'       => isset($updatedCart['taxC']) ? $updatedCart['taxC'] : '',
+            'promoC'     => isset($updatedCart['promoC']) ? $updatedCart['promoC'] : '',
+            'promoD'     => isset($updatedCart['promoD']) ? $updatedCart['promoD'] : ''
+        );
+        return $updatedCartResponse;
+    }
+
+    private function formatUserObjectResponse($userInfoObject)
     {
         $finalUserResponse = Array();
-        if(isset($userInfo['user_identifier']) || is_null($userInfo['user_identifier'])){
-            $this->userModel->setUserId($userInfo['user_identifier']);
+        if(isset($userInfoObject['user_identifier']) || is_null($userInfoObject['user_identifier'])){
+            $this->userModel->setUserId($userInfoObject['user_identifier']);
             $finalUserResponse['response']['user_identifier'] = $this->userModel->getUserId();
         }
-        if(isset($userInfo['email']) || is_null($userInfo['email'])){
-            $this->userModel->setEmail($userInfo['email']);
+        if(isset($userInfoObject['email']) || is_null($userInfoObject['email'])){
+            $this->userModel->setEmail($userInfoObject['email']);
             $finalUserResponse['response']['email'] = $this->userModel->getEmail();
         }
-        if(isset($userInfo['first_name']) || is_null($userInfo['first_name'])){
-            $this->userModel->setFirstName($userInfo['first_name']);
+        if(isset($userInfoObject['first_name']) || is_null($userInfoObject['first_name'])){
+            $this->userModel->setFirstName($userInfoObject['first_name']);
             $finalUserResponse['response']['first_name'] = $this->userModel->getFirstName();
         }
-        if(isset($userInfo['last_name']) || is_null($userInfo['last_name'])){
-            $this->userModel->setLastName($userInfo['last_name']);
+        if(isset($userInfoObject['last_name']) || is_null($userInfoObject['last_name'])){
+            $this->userModel->setLastName($userInfoObject['last_name']);
             $finalUserResponse['response']['last_name'] = $this->userModel->getLastName();
         }
-        if(isset($userInfo['personal_address']['phone_number']) || is_null($userInfo['personal_address']['phone_number'])){
-            $this->userModel->setPhoneNumber($userInfo['personal_address']['phone_number']);
+        if(isset($userInfoObject['personal_address']['phone_number']) || is_null($userInfoObject['personal_address']['phone_number'])){
+            $this->userModel->setPhoneNumber($userInfoObject['personal_address']['phone_number']);
             $finalUserResponse['response']['phone_number'] = $this->userModel->getPhoneNumber();
         }
-        if(isset($userInfo['user_status_code']) || is_null($userInfo['user_status_code'])){
-            $this->userModel->setStatusCode($userInfo['user_status_code']);
+        if(isset($userInfoObject['user_status_code']) || is_null($userInfoObject['user_status_code'])){
+            $this->userModel->setStatusCode($userInfoObject['user_status_code']);
             $finalUserResponse['response']['status_code'] = $this->userModel->getStatusCode();
             /** This session is created to keep track of the user's reset status,
              * during their interaction with the cart. **/
             if ($this->userModel->getStatusCode() == "RESET")
                 Session::put("user_status_reset", true);
         }
-        if(isset($userInfo['personal_address']['address_line_1']) || is_null($userInfo['personal_address']['address_line_1'])){
-            $this->userModel->setAddressLine1($userInfo['personal_address']['address_line_1']);
+        if(isset($userInfoObject['personal_address']['address_line_1']) || is_null($userInfoObject['personal_address']['address_line_1'])){
+            $this->userModel->setAddressLine1($userInfoObject['personal_address']['address_line_1']);
             $finalUserResponse['response']['address_line_1'] = $this->userModel->getAddressLine1();
         }
-        if(isset($userInfo['personal_address']['address_line_2']) || is_null($userInfo['personal_address']['address_line_2'])){
-            $this->userModel->setAddressLine2($userInfo['personal_address']['address_line_2']);
+        if(isset($userInfoObject['personal_address']['address_line_2']) || is_null($userInfoObject['personal_address']['address_line_2'])){
+            $this->userModel->setAddressLine2($userInfoObject['personal_address']['address_line_2']);
             $finalUserResponse['response']['address_line_2'] = $this->userModel->getAddressLine2();
         }
-        if(isset($userInfo['personal_address']['city_name']) || is_null($userInfo['personal_address']['city_name'])){
-            $this->userModel->setCityName($userInfo['personal_address']['city_name']);
+        if(isset($userInfoObject['personal_address']['city_name']) || is_null($userInfoObject['personal_address']['city_name'])){
+            $this->userModel->setCityName($userInfoObject['personal_address']['city_name']);
             $finalUserResponse['response']['city'] = $this->userModel->getCityName();
         }
-        if(isset($userInfo['personal_address']['zip_code']) || is_null($userInfo['personal_address']['zip_code'])){
-            $this->userModel->setZipCode($userInfo['personal_address']['zip_code']);
+        if(isset($userInfoObject['personal_address']['zip_code']) || is_null($userInfoObject['personal_address']['zip_code'])){
+            $this->userModel->setZipCode($userInfoObject['personal_address']['zip_code']);
             $finalUserResponse['response']['zip_code'] = $this->userModel->getZipCode();
         }
-        if(isset($userInfo['personal_address']['state_code']) || is_null($userInfo['personal_address']['state_code'])){
-            $this->userModel->setStateCode($userInfo['personal_address']['state_code']);
+        if(isset($userInfoObject['personal_address']['state_code']) || is_null($userInfoObject['personal_address']['state_code'])){
+            $this->userModel->setStateCode($userInfoObject['personal_address']['state_code']);
             $finalUserResponse['response']['state_code'] = $this->userModel->getStateCode();
         }
-        if(isset($userInfo['personal_address']['state_name']) || is_null($userInfo['personal_address']['state_name'])){
-            $this->userModel->setStateName($userInfo['personal_address']['state_name']);
+        if(isset($userInfoObject['personal_address']['state_name']) || is_null($userInfoObject['personal_address']['state_name'])){
+            $this->userModel->setStateName($userInfoObject['personal_address']['state_name']);
             $finalUserResponse['response']['state_name'] = $this->userModel->getStateName();
         }
-        if(isset($userInfo['personal_address']['country_code']) || is_null($userInfo['personal_address']['country_code'])){
-            $this->userModel->setCountryCode($userInfo['personal_address']['country_code']);
+        if(isset($userInfoObject['personal_address']['country_code']) || is_null($userInfoObject['personal_address']['country_code'])){
+            $this->userModel->setCountryCode($userInfoObject['personal_address']['country_code']);
             $finalUserResponse['response']['country_code'] = $this->userModel->getCountryCode();
         }
-        if(isset($userInfo['personal_address']['country_name']) || is_null($userInfo['personal_address']['country_name'])){
-            $this->userModel->setCountryName($userInfo['personal_address']['country_name']);
+        if(isset($userInfoObject['personal_address']['country_name']) || is_null($userInfoObject['personal_address']['country_name'])){
+            $this->userModel->setCountryName($userInfoObject['personal_address']['country_name']);
             $finalUserResponse['response']['country_name'] = $this->userModel->getCountryName();
         }
         return $finalUserResponse;
@@ -769,7 +890,7 @@ class UserFactory
 
     private function setUserInfoSession($userInfo)
     {
-        $userHelper = $this->getUserHelper();
+        $userHelper = new UserHelper();
 
         $billingInfo = isset($userInfo['response']['user']['Billing_Information']) ? $userInfo['response']['user']['Billing_Information'] : array();
 
