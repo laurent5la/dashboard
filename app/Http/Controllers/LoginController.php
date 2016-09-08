@@ -29,9 +29,9 @@ class LoginController extends Controller {
     }
 
     /**
-     * Backend action to reset the user's password
+     * Backend action to send the reset password request
      *
-     * @return Array
+     * @return array
      * @since 16.13
      * @author mvalenzuela
      */
@@ -57,15 +57,43 @@ class LoginController extends Controller {
         return [];
     }
 
-
     /**
      * Sets parameters for reset password
      * @param Array $params
+     * @since 16.13
+     * @author mvalenzuela
      */
     private function setParamsForResetPassword(&$params)
     {
         $params['campaign_folder']      = Config::get('reset_password.campaign_folder');
         $params['campaign_name']        = Config::get('reset_password.campaign_name');
         $params['password_reset_url']   = Config::get('reset_password.password_reset_url');
+    }
+
+    /**
+     * Backend action to change the password after reset request.
+     * @return array
+     * @since 16.13
+     * @author mvalenzuela
+     */
+    public function newPassword()
+    {
+        $logFactory = new LogFactory();
+        $params = Request::json()->all();
+
+        if(!is_array($params))
+        {
+            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
+        }
+        else
+        {
+            $this->timingStart(__METHOD__);
+            $userMapper = new UserMapper();
+            $userObject = $userMapper->changePassword($params);
+            $this->timingEnd($logFactory);
+            return $userObject;
+        }
+
+        return [];
     }
 }

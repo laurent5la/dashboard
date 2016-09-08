@@ -12,3 +12,5 @@
 */
 
 Route::get('/', 'LoginController@index');
+Route::post('/reset-password', 'LoginController@resetPassword');
+Route::post('/change-password', 'LoginController@changePassword');
