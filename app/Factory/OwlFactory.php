@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mapper;
+namespace App\Factory;
 
 use App\Lib\Dashboard\Owl\OwlClient;
 use App\Models\Helpers\UserHelper;
@@ -38,6 +38,7 @@ class OwlFactory extends OwlClient
 
     public function retrieveUserToken($email, $password)
     {
+        $owlPostClient = null;
         if(is_null(Session::get('user_activity')))
             Session::set('user_activity', []);
         $userSession = Session::get('user_activity');
@@ -56,7 +57,6 @@ class OwlFactory extends OwlClient
                 $owlInstance = OwlClient::getInstance();
                 $owlPostClient = $owlInstance->owlPostRequest($userTokenURL, $userLoginParams, false);
                 Session::set('user_activity', $this->userActivities);
-                return $owlPostClient;
             }
             else
             {
@@ -69,8 +69,8 @@ class OwlFactory extends OwlClient
         {
             $this->logMessage['OwlFactory->userLogin']['Login_Endpoint'] = 'Invalid Login Endpoint';
             $this->logFactory->writeErrorLog($this->logMessage);
-            return null;
         }
+        return $owlPostClient;
 
     }
 

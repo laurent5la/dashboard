@@ -4,7 +4,7 @@ namespace App\Lib\Dashboard\Owl;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
-use App\Mapper\LogFactory;
+use App\Factory\LogFactory;
 use Cache;
 use Config;
 

@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Mapper\LogFactory;
+use App\Factory\LogFactory;
 use App\Mapper\UserMapper;
 use Request;
 use Config;

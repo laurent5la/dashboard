@@ -1,5 +1,5 @@
 <?php
-namespace App\Mapper;
+namespace App\Factory;
 
 //TODO: Remove references to objects in the cart project we don't need anymore. i.e. App/Models/ShoppingCart
 
@@ -7,8 +7,9 @@ use App\Lib\ECart\Helper\CrossCookie;
 use App\Models\User;
 use Illuminate\Support\Facades\Session;
 use App\Models\ShoppingCart;
-use \Darryldecode\Cart\CartCondition;
 use App\Models\Helpers\UserHelper;
+use App\Factory\LogFactory;
+use App\Factory\OwlFactory;
 
 class UserObjectFactory
 {
@@ -21,7 +22,6 @@ class UserObjectFactory
     public function __construct($crossCookie = null)
     {
         $this->owlFactory = new OwlFactory();
-        $this->avalaraFactory = new AvalaraFactory();
         if(empty($crossCookie)) {
             $this->crossCookie = new CrossCookie();
         }

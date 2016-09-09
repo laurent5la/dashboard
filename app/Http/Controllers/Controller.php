@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Bus\DispatchesCommands;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Validation\ValidatesRequests;
-use App\Mapper\LogFactory;
+use App\Factory\LogFactory;
 
 abstract class Controller extends BaseController {
 
