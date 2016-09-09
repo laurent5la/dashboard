@@ -46,8 +46,7 @@ class UserObjectFactory
      * @use App\Models\User::__construct()
      * @author Kunal
      */
-
-    public function retrieveUserInfo($params)
+    public function retrieveUserDashboardInfo($params)
     {
         $retrieveUserToken = $this->owlFactory->userLogin($params['email'], $params['password']);
 
@@ -59,25 +58,25 @@ class UserObjectFactory
                     $userRefreshToken = $retrieveUserToken['response']['refresh_token'];
                     $this->crossCookie->login($userToken, $userRefreshToken);
 
-                    $userInfoObject = $this->owlFactory->getUserInfo($userToken);
+//                    $userInfoObject = $this->owlFactory->getUserInfo($userToken);
 
-                    if(isset($userInfoObject['user']['Personal_Information']['user_status_code']) &&
-                        $userInfoObject['user']['Personal_Information']['user_status_code'] === "RESET")
-                    {
-                        Session::put("temporary_password", $params['password']);
-                    }
-
-                    if(isset($userInfoObject['user']['Billing_Information']))
-                        $userBillingInfoObject = $userInfoObject['user']['Billing_Information'];
-                    else
-                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
-
-                    if(isset($userInfoObject['user']['Personal_Information']))
-                        $userPersonalInfoObject = $userInfoObject['user']['Personal_Information'];
-                    else
-                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
-
-                    $this->prepareAvalaraAddressValidate($userPersonalInfoObject);
+//                    if(isset($userInfoObject['user']['Personal_Information']['user_status_code']) &&
+//                        $userInfoObject['user']['Personal_Information']['user_status_code'] === "RESET")
+//                    {
+//                        Session::put("temporary_password", $params['password']);
+//                    }
+//
+//                    if(isset($userInfoObject['user']['Billing_Information']))
+//                        $userBillingInfoObject = $userInfoObject['user']['Billing_Information'];
+//                    else
+//                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
+//
+//                    if(isset($userInfoObject['user']['Personal_Information']))
+//                        $userPersonalInfoObject = $userInfoObject['user']['Personal_Information'];
+//                    else
+//                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
+//
+//                    $this->prepareAvalaraAddressValidate($userPersonalInfoObject);
                     if(isset($userPersonalInfoObject['user_type_code']) && $userPersonalInfoObject['user_type_code'] != 'EXT')
                     {
                         $errorMsg = 'You\'re not authorized to access this portal.';
@@ -98,35 +97,35 @@ class UserObjectFactory
                     }
                     else
                     {
-                        $calculatedTaxResponse = $this->prepareTaxRequestResponse($userPersonalInfoObject);
-                        $updatedCartResponse = $this->updateCartContentsWithTax($calculatedTaxResponse);
+//                        $calculatedTaxResponse = $this->prepareTaxRequestResponse($userPersonalInfoObject);
+//                        $updatedCartResponse = $this->updateCartContentsWithTax($calculatedTaxResponse);
                         $userPersonalInfoObject = $this->formatUserObjectResponse($userPersonalInfoObject);
 
                         $errorFlag = false;
-                        if($userBillingInfoObject == '')
-                        {
-                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-                            $finalLoginResponse['error_code'] = 'update_user_tax';
-                            $finalLoginResponse['error_message'] = '';
-                            $errorFlag = true;
-                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
-                        }
-                        if($userPersonalInfoObject == '' || count($userPersonalInfoObject) == 0)
-                        {
-                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-                            $finalLoginResponse['error_code'] = 'update_billing_tax';
-                            $finalLoginResponse['error_message'] = '';
-                            $errorFlag = true;
-                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
-                        }
-                        if(strlen($calculatedTaxResponse['response']['TaxRate']) == 0)
-                        {
-                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-                            $finalLoginResponse['error_code'] = 'update_user_billing';
-                            $finalLoginResponse['error_message'] = '';
-                            $errorFlag = true;
-                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Tax_Information'] = "Missing Avalara Tax Information";
-                        }
+//                        if($userBillingInfoObject == '')
+//                        {
+//                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+//                            $finalLoginResponse['error_code'] = 'update_user_tax';
+//                            $finalLoginResponse['error_message'] = '';
+//                            $errorFlag = true;
+//                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
+//                        }
+//                        if($userPersonalInfoObject == '' || count($userPersonalInfoObject) == 0)
+//                        {
+//                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+//                            $finalLoginResponse['error_code'] = 'update_billing_tax';
+//                            $finalLoginResponse['error_message'] = '';
+//                            $errorFlag = true;
+//                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
+//                        }
+//                        if(strlen($calculatedTaxResponse['response']['TaxRate']) == 0)
+//                        {
+//                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+//                            $finalLoginResponse['error_code'] = 'update_user_billing';
+//                            $finalLoginResponse['error_message'] = '';
+//                            $errorFlag = true;
+//                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Tax_Information'] = "Missing Avalara Tax Information";
+//                        }
                         if($errorFlag == false)
                         {
                             $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
@@ -134,9 +133,9 @@ class UserObjectFactory
                             $finalLoginResponse['error_message'] = '';
                             $this->logFactory->writeInfoLog("Login Success");
                         }
-                        $finalLoginResponse['response']['user']['Personal_Information'] = $userPersonalInfoObject;
-                        $finalLoginResponse['response']['user']['Billing_Information'] = $userBillingInfoObject;
-                        $finalLoginResponse['response']['cart'] = $updatedCartResponse;
+//                        $finalLoginResponse['response']['user']['Personal_Information'] = $userPersonalInfoObject;
+//                        $finalLoginResponse['response']['user']['Billing_Information'] = $userBillingInfoObject;
+//                        $finalLoginResponse['response']['cart'] = $updatedCartResponse;
                         $finalLoginResponse['response']['user']['Personal_Information']['response']['user_token'] = $userToken;
 
                         if($this->logMessage != '')

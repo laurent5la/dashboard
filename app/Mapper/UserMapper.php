@@ -6,7 +6,7 @@ class UserMapper
     public function getUser($params)
     {
         $userFactory = new UserObjectFactory();
-        $userObject = $userFactory->retrieveUserInfo($params);
+        $userObject = $userFactory->retrieveUserDashboardInfo($params);
         return $userObject;
     }
 

@@ -46,4 +46,18 @@ abstract class Controller extends BaseController {
         $logFactory->writeTimingLog($this->logTime);
     }
 
+    /**
+     * Called to log an error.
+     * @param String $method
+     * @param String $warningMessage
+     * @param LogFactory $logFactory
+     * @since 16.13
+     * @author aprakash
+     */
+    protected function logWarning($method, $warningMessage,  LogFactory &$logFactory)
+    {
+        $logMessage[__CLASS__ . '->' . $method] = $warningMessage;
+        $logFactory->writeWarningLog($logMessage);
+    }
+
 }
