@@ -10,6 +10,13 @@ class UserMapper
         return $userObject;
     }
 
+    public function authenticateUser($params)
+    {
+        $userFactory = new UserObjectFactory();
+        $userObject = $userFactory->authenticateUser($params);
+        return $userObject;
+    }
+
     public function setUser($params)
     {
         $userFactory = new UserObjectFactory();

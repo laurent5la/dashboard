@@ -117,7 +117,7 @@ class UserController extends Controller {
         {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
-            $userObject = $userMapper->getUser($secureParams);
+            $userObject = $userMapper->authenticateUser($secureParams);
             $this->timingEnd($logFactory);
             return $userObject;
         }

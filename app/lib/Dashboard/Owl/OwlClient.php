@@ -44,10 +44,7 @@ class OwlClient
         $this->clientSecret = $this->owlConfig->get('owl.client_secret');
         $this->cacheKeyForOWLToken = 'OWL-TOKEN' . '-' . $this->clientID;
         $this->cacheKeyForOWLRefreshToken = 'OWL-REFRESH-TOKEN' . '-' . $this->clientID;
-
-        if (is_null($this->logFactory)) {
-            $this->logFactory = new LogFactory();
-        }
+        $this->logFactory = new LogFactory();
     }
 
     /**
@@ -202,7 +199,7 @@ class OwlClient
         return $response;
     }
 
-    public function owlPostRequest($url, $params)
+    public function owlPostRequest($url, $params, $userTokenInHeader = false)
     {
         $this->init();
         $accessToken = $this->getAccessToken();

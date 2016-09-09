@@ -36,14 +36,14 @@ class OwlFactory extends OwlClient
         $this->helper = new UserHelper();
     }
 
-    public function userLogin($email, $password)
+    public function retrieveUserToken($email, $password)
     {
         if(is_null(Session::get('user_activity')))
             Session::set('user_activity', []);
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 1 - User is logging in with Email - $email");
-        $userTokenURL = $this->config->get('cart_endpoints.user_token');
+        $userTokenURL = $this->config->get('owl_endpoints.user_token');
         if(parent::isValidEndpoint($userTokenURL))
         {
             if (filter_var($email, FILTER_VALIDATE_EMAIL))
@@ -81,7 +81,7 @@ class OwlFactory extends OwlClient
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 2 - User is logging out with User Token - $userToken");
-		$userLogoutURL = $this->config->get('cart_endpoints.user_logout');
+		$userLogoutURL = $this->config->get('owl_endpoints.user_logout');
 
 		if ($this->isValidEndpoint($userLogoutURL))
 		{
@@ -116,7 +116,7 @@ class OwlFactory extends OwlClient
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 3 - User is registering with email - ".$params['email']);
-        $userRegistrationURL = $this->config->get('cart_endpoints.user_register');
+        $userRegistrationURL = $this->config->get('owl_endpoints.user_register');
         $userRegistrationValidation = $this->helper->areValidRegisterParams($params);
         if(!empty($userRegistrationValidation))
         {
@@ -164,7 +164,7 @@ class OwlFactory extends OwlClient
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 4 - User is updating his personal information.");
-        $userPersonalUpdateURL = $this->config->get('cart_endpoints.user_personal_update');
+        $userPersonalUpdateURL = $this->config->get('owl_endpoints.user_personal_update');
         $userPersonalUpdateValidation = $this->helper->areValidUpdateParams($params);
         if(!empty($userPersonalUpdateValidation))
         {
@@ -198,7 +198,7 @@ class OwlFactory extends OwlClient
 
     public function isUserTokenValid($userToken)
     {
-        $validUserTokenURL = $this->config->get('cart_endpoints.valid_user_token');
+        $validUserTokenURL = $this->config->get('owl_endpoints.valid_user_token');
 
         if($this->isValidEndpoint($validUserTokenURL))
         {
@@ -232,7 +232,7 @@ class OwlFactory extends OwlClient
     {
         $userToken = ($userToken) ? $userToken : $this->userToken;
 
-        $userPersonalAndBillingInfoURL = $this->config->get('cart_endpoints.user_billing_info');
+        $userPersonalAndBillingInfoURL = $this->config->get('owl_endpoints.user_billing_info');
 
         if ($this->isUserTokenValid($userToken)) {
             $params = array(
@@ -308,7 +308,7 @@ class OwlFactory extends OwlClient
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 5 - User is trying to reset the password with email - ".$resetPasswordInput['email']);
-        $resetPasswordURL = $this->config->get('cart_endpoints.user_password_reset');
+        $resetPasswordURL = $this->config->get('owl_endpoints.user_password_reset');
         if(parent::isValidEndpoint($resetPasswordURL))
         {
             $params = array(
@@ -349,7 +349,7 @@ class OwlFactory extends OwlClient
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 6 - User is trying to change the password");
-        $resetPasswordURL = $this->config->get('cart_endpoints.user_password_change');
+        $resetPasswordURL = $this->config->get('owl_endpoints.user_password_change');
         if(parent::isValidEndpoint($resetPasswordURL))
         {
 			$userHelper = new UserHelper();
@@ -382,6 +382,8 @@ class OwlFactory extends OwlClient
             Session::set('user_activity', []);
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
+
+        //This might need to be added to owl endpoints config
         $productDetailsURL = $this->config->get('cart_endpoints.product_details');
         $productIdsString = implode(",", $productIds);
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 7 - User is adding a product with product_id - ".$productIdsString." to the cart");
@@ -409,7 +411,7 @@ class OwlFactory extends OwlClient
 
     public function getCompanyName($dunsNumber)
     {
-        $companyNameURL = $this->config->get('cart_endpoints.company_details');
+        $companyNameURL = $this->config->get('owl_endpoints.company_details');
 
         if(parent::isValidEndpoint($companyNameURL))
         {

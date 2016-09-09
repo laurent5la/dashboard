@@ -217,6 +217,90 @@ class UserObjectFactory
         }
     }
 
+
+
+    public function authenticateUser($params)
+    {
+        $retrieveUserToken = $this->owlFactory->retrieveUserToken($params['email'], $params['password']);
+
+        if ($retrieveUserToken && isset($retrieveUserToken['meta'])) {
+            switch ($retrieveUserToken['meta']['code']) {
+                case '200':
+//                    Session::set('failed_attempts', 0);
+                    $userToken = $retrieveUserToken['response']['user_token'];
+                    $userRefreshToken = $retrieveUserToken['response']['refresh_token'];
+                    $this->crossCookie->login($userToken, $userRefreshToken);
+
+                    break;
+                case '400':
+                case '401':
+                case '402':
+                    $activityLog = Array();
+                    $activityLog["activity_log"] = Session::get('user_activity');
+                    $this->logFactory->writeActivityLog($activityLog);
+                    $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+                    $finalLoginResponse['error_code'] = 'display_message';
+                    $finalLoginResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
+                    return json_encode($finalLoginResponse);
+                    break;
+                case '403':
+//                    @TODO Enable it for failed login attempts
+//                    if(Session::get('failed_attempts'))
+//                        $failedLoginAttempts = Session::get('failed_attempts');
+//                    else
+//                        $failedLoginAttempts = 0;
+//                    $failedLoginAttempts += 1;
+//                    Session::set('failed_attempts', $failedLoginAttempts);
+//                    if($failedLoginAttempts >= 3)
+//                    {
+//                        $errorMsg = 'You\'ve exceeded maximum failed attempts! Please contact the customer support.';
+//                        $errorArray = array(
+//                            'meta_code' => 500,
+//                            'response' => array(
+//                                'message' => $errorMsg,
+//                            ),
+//                        );
+//                    }
+//                    else
+//                    {
+                    $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
+                    $errorArray = array(
+                        'meta_code' => $retrieveUserToken['meta']['code'],
+                        'response' => array(
+                            'message' => $errorMsg,
+                        ),
+                    );
+                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $errorArray;
+                    $this->logFactory->writeInfoLog($errorArray);
+
+//                    }
+
+                    return json_encode($errorArray);
+                    break;
+
+                case '404':
+                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = 'Page Not Found';
+                    $this->logFactory->writeErrorLog($this->logMessage);
+                    break;
+
+                default:
+                    $errorMsg = $this->config->get('Enums.Status.MESSAGE');
+                    $errorArray = array(
+                        'meta_code' => 500,
+                        'response' => array(
+                            'message' => $errorMsg,
+                        ),
+                    );
+                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $errorArray;
+                    $this->logFactory->writeErrorLog($errorArray);
+                    return $errorArray;
+                    break;
+            }
+        }else{
+            $this->logFactory->writeErrorLog("Login Failure");
+        }
+    }
+
     /**
      * This function call OWL's Logout Endpoint passing user token which is stored in Session.
      * @return array finalLogoutResponse
