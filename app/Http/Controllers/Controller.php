@@ -32,7 +32,7 @@ abstract class Controller extends BaseController {
     protected function timingStart($method)
     {
         $this->logTime[__CLASS__] = $method;
-        $this->logTime['start'] = time();
+        $this->logTime['start_time'] = time();
     }
 
     /**

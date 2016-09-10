@@ -1,5 +1,5 @@
 <?php
-namespace App\Lib\ECart\Helper;
+namespace App\Lib\Dashboard\Helper;
 
 /**
  * Class CrossCookieAbstract

@@ -4,7 +4,6 @@ namespace App\Factory;
 
 use App\Lib\Dashboard\Owl\OwlClient;
 use App\Models\Helpers\UserHelper;
-use GuzzleHttp\Client;
 use Session;
 use Config;
 
@@ -20,7 +19,6 @@ class OwlFactory extends OwlClient
 {
     private $config;
     private $userToken = '';
-    private $client;
     private $logFactory;
     private $logMessage = Array();
     private $helper;
@@ -30,10 +28,7 @@ class OwlFactory extends OwlClient
     public function __construct()
     {
         $this->config = app()['config'];
-        $this->client = new client();
-        $this->client->setBaseUrl(env('OWL_BASE_URL'));
         $this->logFactory = new LogFactory();
-        $this->helper = new UserHelper();
     }
 
     public function retrieveUserToken($email, $password)
@@ -294,6 +289,88 @@ class OwlFactory extends OwlClient
         }
         return null;
     }
+
+
+
+
+    /**
+     * This function will return both Personal and Billing info of the user.
+     * @param  string $userToken
+     * @return Array userInfo including Personal and Billing Info.
+     */
+
+    public function getUserDetail($userToken = null)
+    {
+        $userToken = ($userToken) ? $userToken : $this->userToken;
+
+        $userDetailURL = $this->config->get('owl_endpoints.user_detail');
+
+        if ($this->isUserTokenValid($userToken)) {
+            $params = array(
+                'query' => array(
+                    'user_token' => $userToken
+                )
+            );
+
+            if (parent::isValidEndpoint($userDetailURL))
+            {
+                $owlInstance = OwlClient::getInstance();
+                $userDetailResponse = $owlInstance->owlGetRequest($userDetailURL, $params, $userToken);
+
+                $userResponse = array();
+
+                switch ($userDetailResponse['meta']['code']) {
+                    case '200':
+
+                        if (!empty($userDetailResponse['response']['user']['_userIdentifier'])) {
+                            $userResponse['user']['user_detail'] = $userDetailResponse['response']['user'];
+                        } else {
+                            return array('error' => 'MISSING_ID');
+                        }
+                        break;
+                    case '400':
+                    case '401':
+                    case '402':
+                    case '403':
+                        $activityLog = Array();
+                        $activityLog["activity_log"] = Session::get('user_activity');
+                        $this->logFactory->writeActivityLog($activityLog);
+                        if (isset($userDetailResponse['error'][0]))
+                        {
+                            //try one more time
+                            $userDetailResponse = $owlInstance->owlGetRequest($userDetailURL, $params, $userToken);
+                            if($userDetailResponse['meta']['code'] != '200') {
+                                $userResponse['user']['user_detail'] = '';
+                            }
+                            else {
+                                $userResponse['user']['user_detail'] = $userDetailResponse['response']['user'];
+                            }
+                        }
+                        break;
+                    default:
+                        $userResponse['user']['user_detail'] = '';
+                        break;
+                }
+                return $userResponse;
+
+            }
+            else
+            {
+                $this->logMessage['OwlFactory->getUserInfo']['User_Information'] = 'Invalid User Information Endpoint';
+                $this->logFactory->writeErrorLog($this->logMessage);
+                return null;
+            }
+        }
+        return null;
+    }
+
+
+
+
+
+
+
+
 
     /**
      * This function will return both Personal and Billing info of the user.

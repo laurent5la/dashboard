@@ -1,5 +1,5 @@
 <?php
-namespace App\Lib\ECart\Helper;
+namespace App\Lib\Dashboard\Helper;
 
 use App\Mapper\OwlFactory;
 use App\Lib\Dashboard\Owl\OwlClient;

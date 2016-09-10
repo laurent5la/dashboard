@@ -106,7 +106,7 @@ class UserController extends Controller {
     public function login()
     {
         $logFactory = new LogFactory();
-        $params = Request::json()->all();
+        $params = Request::all();
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params))
