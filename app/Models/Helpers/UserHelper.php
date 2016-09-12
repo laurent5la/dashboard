@@ -64,26 +64,12 @@ class UserHelper
     {
         if(!isset($params['email']) || is_null($params['email']) || !filter_var($params['email'], FILTER_VALIDATE_EMAIL))
             $this->logMessage['UserHelper->areValidRegisterParams']['Email'] = 'Invalid Email in the Request';
-        if(!isset($params['personal-first-name']) || is_null($params['personal-first-name']))
+        if(!isset($params['first-name']) || is_null($params['first-name']))
             $this->logMessage['UserHelper->areValidRegisterParams']['First_Name'] = 'Invalid First Name in the Request';
-        if(!isset($params['personal-last-name']) || is_null($params['personal-last-name']))
+        if(!isset($params['last-name']) || is_null($params['last-name']))
             $this->logMessage['UserHelper->areValidRegisterParams']['Last_Name'] = 'Invalid Last Name in the Request';
         if(!isset($params['password1']) || is_null($params['password1']) || (strlen($params['password1']) < 6 || !preg_match("#[0-9]+#", $params['password1']) || !preg_match("#[a-z]+#", $params['password1'])))
             $this->logMessage['UserHelper->areValidRegisterParams']['Password'] = 'Invalid Password in the Request';
-        if(!isset($params['personal-phone']) || is_null($params['personal-phone']))
-            $this->logMessage['UserHelper->areValidRegisterParams']['Phone'] = 'Invalid Phone Number in the Request';
-        if(!isset($params['personal-address-line1']) || is_null($params['personal-address-line1']))
-            $this->logMessage['UserHelper->areValidRegisterParams']['Address_1'] = 'Invalid Address 1 in the Request';
-        if(!isset($params['personal-city']) || is_null($params['personal-city']))
-            $this->logMessage['UserHelper->areValidRegisterParams']['City'] = 'Invalid City in the Request';
-        if(!isset($params['personal-state']) || is_null($params['personal-state']))
-            $this->logMessage['UserHelper->areValidRegisterParams']['State'] = 'Invalid State in the Request';
-        if(!isset($params['personal-zip']) || is_null($params['personal-zip']))
-            $this->logMessage['UserHelper->areValidRegisterParams']['Zip'] = 'Invalid Zip in the Request';
-        if(!isset($params['personal-country-name']) || is_null($params['personal-country-name']))
-            $this->logMessage['UserHelper->areValidRegisterParams']['Country'] = 'Invalid Country Name in the Request';
-        if(!isset($params['personal-country']) || is_null($params['personal-country']))
-            $this->logMessage['UserHelper->areValidRegisterParams']['Country'] = 'Invalid Country in the Request';
         return $this->logMessage;
     }
 

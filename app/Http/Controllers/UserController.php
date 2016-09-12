@@ -109,12 +109,9 @@ class UserController extends Controller {
         $params = Request::all();
         $secureParams = $this->cleanParams($params);
 
-        if(!is_array($params))
-        {
+        if(!is_array($params)) {
             $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
-        }
-        else
-        {
+        } else {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
             $userObject = $userMapper->authenticateUser($secureParams);
@@ -134,7 +131,7 @@ class UserController extends Controller {
     public function register()
     {
         $logFactory = new LogFactory();
-        $params = Request::json()->all();
+        $params = Request::json();
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params))
@@ -151,6 +148,20 @@ class UserController extends Controller {
         }
 
         return [];
+    }
+
+
+    public function logout()
+    {
+        $logFactory = new LogFactory();
+        $this->logTime['UserController'] = "logout";
+        $this->logTime['start_time'] = time();
+        $userMapper = new UserMapper();
+        $userObject = $userMapper->logoutUser();
+        $this->logTime['end_time'] = time();
+        $this->logTime['elapsedTime'] = $this->logTime['end_time'] - $this->logTime['start_time'];
+        $logFactory->writeTimingLog($this->logTime);
+        return $userObject;
     }
 
     /**

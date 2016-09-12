@@ -109,10 +109,11 @@ class OwlFactory extends OwlClient
         if(is_null(Session::get('user_activity')))
             Session::set('user_activity', []);
         $userSession = Session::get('user_activity');
+        $userHelper = new UserHelper();
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 3 - User is registering with email - ".$params['email']);
         $userRegistrationURL = $this->config->get('owl_endpoints.user_register');
-        $userRegistrationValidation = $this->helper->areValidRegisterParams($params);
+        $userRegistrationValidation = $userHelper->areValidRegisterParams($params);
         if(!empty($userRegistrationValidation))
         {
             $this->logFactory->writeErrorLog($userRegistrationValidation);
@@ -126,15 +127,6 @@ class OwlFactory extends OwlClient
                     'first_name' => $params['personal-first-name'],
                     'last_name' => $params['personal-last-name'],
                     'password' => $params['password1'],
-                    'phone_number' => $params['personal-phone'],
-                    'accepted_tos' => 1,
-                    'address_line_1' => $params['personal-address-line1'],
-                    'address_line_2' => isset($params['personal-address-line2']) ? $params['personal-address-line2'] : null,
-                    'city' => $params['personal-city'],
-                    'state_code' => $params['personal-state'],
-                    'country_code' => $params['personal-country'],
-					'country_name' => $params['personal-country-name'],
-                    'postal_code' => $params['personal-zip'],
                     'source' => 'WAC',
                 );
 
@@ -194,6 +186,7 @@ class OwlFactory extends OwlClient
     public function isUserTokenValid($userToken)
     {
         $validUserTokenURL = $this->config->get('owl_endpoints.valid_user_token');
+        $response = null;
 
         if($this->isValidEndpoint($validUserTokenURL))
         {
@@ -205,92 +198,15 @@ class OwlFactory extends OwlClient
 
             $owlInstance = OwlClient::getInstance();
             $response = $owlInstance->owlGetRequest($validUserTokenURL, $params);
-            $successCode = $response['meta']['code'] == 200;
-            return $successCode;
         }
         else
         {
             $this->logMessage['OwlFactory->isUserTokenValid']['Valid_Token'] = 'Invalid User Token Endpoint';
             $this->logFactory->writeErrorLog($this->logMessage);
-            return null;
         }
 
+        return $response;
     }
-
-    /**
-     * This function will return both Personal and Billing info of the user.
-     * @param  string $userToken
-     * @return Array userInfo including Personal and Billing Info.
-     */
-
-    public function getUserInfo($userToken = null)
-    {
-        $userToken = ($userToken) ? $userToken : $this->userToken;
-
-        $userPersonalAndBillingInfoURL = $this->config->get('owl_endpoints.user_billing_info');
-
-        if ($this->isUserTokenValid($userToken)) {
-            $params = array(
-                'query' => array(
-                    'user_token' => $userToken
-                )
-            );
-
-            if (parent::isValidEndpoint($userPersonalAndBillingInfoURL))
-            {
-                $owlInstance = OwlClient::getInstance();
-                $userPersonalAndBillingResponse = $owlInstance->owlGetRequest($userPersonalAndBillingInfoURL, $params, $userToken);
-                $userResponse = array();
-
-                switch ($userPersonalAndBillingResponse['meta']['code']) {
-                    case '200':
-
-                        if (!empty($userPersonalAndBillingResponse['response']['user']['user_identifier'])) {
-                            $userResponse['user']['Personal_Information'] = $userPersonalAndBillingResponse['response']['user'];
-                            $userResponse['user']['Billing_Information']['response']['credit_card_details'] = $userPersonalAndBillingResponse['response']['credit_card_details'];
-                        } else {
-                            return array('error' => 'MISSING_ID');
-                        }
-                        break;
-                    case '400':
-                    case '401':
-                    case '402':
-                    case '403':
-                        $activityLog = Array();
-                        $activityLog["activity_log"] = Session::get('user_activity');
-                        $this->logFactory->writeActivityLog($activityLog);
-                        if (isset($userBillingResponse['error'][0]))
-                        {
-                            //try one more time
-                            $userPersonalAndBillingResponse = $owlInstance->owlGetRequest($userPersonalAndBillingInfoURL, $params, $userToken);
-                            if($userPersonalAndBillingResponse['meta']['code'] != '200') {
-                                $userResponse['user']['Personal_Information'] = '';
-                                $userResponse['user']['Billing_Information'] = '';
-                            }
-                            else {
-                                $userResponse['user']['Billing_Information']['response']['credit_card_details'] = $userPersonalAndBillingResponse['response']['credit_card_details'];
-                            }
-                        }
-                        break;
-                    default:
-                        $userResponse['user']['Personal_Information'] = '';
-                        $userResponse['user']['Billing_Information'] = '';
-                        break;
-                }
-                return $userResponse;
-
-            }
-            else
-            {
-                $this->logMessage['OwlFactory->getUserInfo']['User_Information'] = 'Invalid User Information Endpoint';
-                $this->logFactory->writeErrorLog($this->logMessage);
-                return null;
-            }
-        }
-        return null;
-    }
-
-
 
 
     /**
@@ -299,11 +215,11 @@ class OwlFactory extends OwlClient
      * @return Array userInfo including Personal and Billing Info.
      */
 
-    public function getUserDetail($userToken = null)
+    public function getUserTokenStatus($userToken = null)
     {
         $userToken = ($userToken) ? $userToken : $this->userToken;
 
-        $userDetailURL = $this->config->get('owl_endpoints.user_detail');
+        $userDetailURL = $this->config->get('owl_endpoints.valid_user_token');
 
         if ($this->isUserTokenValid($userToken)) {
             $params = array(
