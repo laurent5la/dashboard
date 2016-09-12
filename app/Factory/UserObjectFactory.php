@@ -455,8 +455,7 @@ class UserObjectFactory
     {
         $userHelper = new UserHelper();
         $forgotPasswordErrorArray = $userHelper->validForgotPasswordParams($params);
-        if(count($forgotPasswordErrorArray)==0)
-        {
+        if(count($forgotPasswordErrorArray)==0) {
             $forgotPasswordResponse = $this->owlFactory->sendResetPasswordEmail($params);
             $finalForgotPasswordResponse = array();
 
@@ -498,17 +497,12 @@ class UserObjectFactory
 
             }
 
-        }
-        else
-        {
+        } else {
             $finalForgotPasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-            if(isset($forgotPasswordErrorArray['email']))
-            {
+            if(isset($forgotPasswordErrorArray['email'])) {
                 $finalForgotPasswordResponse['error_code'] = 'display_error';
                 $finalForgotPasswordResponse['error_message'] = $params['email']." is not a valid email address.";
-            }
-            else
-            {
+            } else {
                 $finalForgotPasswordResponse['error_code'] = '';
                 $finalForgotPasswordResponse['error_message'] = '';
             }
@@ -534,20 +528,17 @@ class UserObjectFactory
 
         $finalChangePasswordResponse = array();
 
-        if (isset($changePasswordResponse['meta']['code']))
-        {
-            switch ($changePasswordResponse['meta']['code'])
-            {
+        if (isset($changePasswordResponse['meta']['code'])) {
+            switch ($changePasswordResponse['meta']['code']) {
                 case '200':
-
-                    if(isset($changePasswordResponse['response']['success']) && $changePasswordResponse['response']['success']==1)
-                    {
+                    if(isset($changePasswordResponse['response']['success']) && $changePasswordResponse['response']['success']==1) {
                         if (Session::has("temporary_password"))
                             Session::forget("temporary_password");
                         /** Because of the successful password change
                          *  The user's status_reset flag will be dropped. */
                         if (Session::has("user_status_reset") && Session::get("user_status_reset"))
                             Session::forget("user_status_reset");
+
                         $finalChangePasswordResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                         $finalChangePasswordResponse['error_code'] = '';
                         $finalChangePasswordResponse['error_message'] = '';
@@ -579,33 +570,6 @@ class UserObjectFactory
 
         return $finalChangePasswordResponse;
     }
-
-    private function prepareAvalaraAddressValidate($userPersonalInfoObject)
-    {
-        $userHelper = new UserHelper();
-        $userLoginAddressValidation = $userHelper->areValidLoginAddressParams($userPersonalInfoObject['personal_address']);
-        if(!empty($userLoginAddressValidation))
-        {
-            $this->logFactory->writeInfoLog($userLoginAddressValidation);
-        }
-        else
-        {
-            $avalaraParams = Array(
-                'Line1'       => $userPersonalInfoObject['personal_address']['address_line_1'],
-                'Line2'       => $userPersonalInfoObject['personal_address']['address_line_2'],
-                'City'        => $userPersonalInfoObject['personal_address']['city_name'],
-                'Region'      => $userPersonalInfoObject['personal_address']['state_code'],
-                'PostalCode'  => $userPersonalInfoObject['personal_address']['zip_code'],
-                'Country'     => $userPersonalInfoObject['personal_address']['country_code']
-            );
-            $validatedAddress = $this->avalaraFactory->getValidAddress($avalaraParams);
-            if(isset($validatedAddress['ResultCode']) && $validatedAddress['ResultCode'] == 'Success')
-                Session::put('addressValidated', 'true');
-            else
-                Session::put('addressValidated', 'false');
-        }
-    }
-
 
     private function prepareTaxRequestResponse($userPersonalInfoObject)
     {
@@ -671,27 +635,27 @@ class UserObjectFactory
     private function formatUserObjectResponse($userInfoObject)
     {
         $finalUserResponse = Array();
-        if(isset($userInfoObject['user_identifier']) || is_null($userInfoObject['user_identifier'])){
+        if(isset($userInfoObject['user_identifier']) || is_null($userInfoObject['user_identifier'])) {
             $this->userModel->setUserId($userInfoObject['user_identifier']);
             $finalUserResponse['response']['user_identifier'] = $this->userModel->getUserId();
         }
-        if(isset($userInfoObject['email']) || is_null($userInfoObject['email'])){
+        if(isset($userInfoObject['email']) || is_null($userInfoObject['email'])) {
             $this->userModel->setEmail($userInfoObject['email']);
             $finalUserResponse['response']['email'] = $this->userModel->getEmail();
         }
-        if(isset($userInfoObject['first_name']) || is_null($userInfoObject['first_name'])){
+        if(isset($userInfoObject['first_name']) || is_null($userInfoObject['first_name'])) {
             $this->userModel->setFirstName($userInfoObject['first_name']);
             $finalUserResponse['response']['first_name'] = $this->userModel->getFirstName();
         }
-        if(isset($userInfoObject['last_name']) || is_null($userInfoObject['last_name'])){
+        if(isset($userInfoObject['last_name']) || is_null($userInfoObject['last_name'])) {
             $this->userModel->setLastName($userInfoObject['last_name']);
             $finalUserResponse['response']['last_name'] = $this->userModel->getLastName();
         }
-        if(isset($userInfoObject['personal_address']['phone_number']) || is_null($userInfoObject['personal_address']['phone_number'])){
+        if(isset($userInfoObject['personal_address']['phone_number']) || is_null($userInfoObject['personal_address']['phone_number'])) {
             $this->userModel->setPhoneNumber($userInfoObject['personal_address']['phone_number']);
             $finalUserResponse['response']['phone_number'] = $this->userModel->getPhoneNumber();
         }
-        if(isset($userInfoObject['user_status_code']) || is_null($userInfoObject['user_status_code'])){
+        if(isset($userInfoObject['user_status_code']) || is_null($userInfoObject['user_status_code'])) {
             $this->userModel->setStatusCode($userInfoObject['user_status_code']);
             $finalUserResponse['response']['status_code'] = $this->userModel->getStatusCode();
             /** This session is created to keep track of the user's reset status,
@@ -699,35 +663,35 @@ class UserObjectFactory
             if ($this->userModel->getStatusCode() == "RESET")
                 Session::put("user_status_reset", true);
         }
-        if(isset($userInfoObject['personal_address']['address_line_1']) || is_null($userInfoObject['personal_address']['address_line_1'])){
+        if(isset($userInfoObject['personal_address']['address_line_1']) || is_null($userInfoObject['personal_address']['address_line_1'])) {
             $this->userModel->setAddressLine1($userInfoObject['personal_address']['address_line_1']);
             $finalUserResponse['response']['address_line_1'] = $this->userModel->getAddressLine1();
         }
-        if(isset($userInfoObject['personal_address']['address_line_2']) || is_null($userInfoObject['personal_address']['address_line_2'])){
+        if(isset($userInfoObject['personal_address']['address_line_2']) || is_null($userInfoObject['personal_address']['address_line_2'])) {
             $this->userModel->setAddressLine2($userInfoObject['personal_address']['address_line_2']);
             $finalUserResponse['response']['address_line_2'] = $this->userModel->getAddressLine2();
         }
-        if(isset($userInfoObject['personal_address']['city_name']) || is_null($userInfoObject['personal_address']['city_name'])){
+        if(isset($userInfoObject['personal_address']['city_name']) || is_null($userInfoObject['personal_address']['city_name'])) {
             $this->userModel->setCityName($userInfoObject['personal_address']['city_name']);
             $finalUserResponse['response']['city'] = $this->userModel->getCityName();
         }
-        if(isset($userInfoObject['personal_address']['zip_code']) || is_null($userInfoObject['personal_address']['zip_code'])){
+        if(isset($userInfoObject['personal_address']['zip_code']) || is_null($userInfoObject['personal_address']['zip_code'])) {
             $this->userModel->setZipCode($userInfoObject['personal_address']['zip_code']);
             $finalUserResponse['response']['zip_code'] = $this->userModel->getZipCode();
         }
-        if(isset($userInfoObject['personal_address']['state_code']) || is_null($userInfoObject['personal_address']['state_code'])){
+        if(isset($userInfoObject['personal_address']['state_code']) || is_null($userInfoObject['personal_address']['state_code'])) {
             $this->userModel->setStateCode($userInfoObject['personal_address']['state_code']);
             $finalUserResponse['response']['state_code'] = $this->userModel->getStateCode();
         }
-        if(isset($userInfoObject['personal_address']['state_name']) || is_null($userInfoObject['personal_address']['state_name'])){
+        if(isset($userInfoObject['personal_address']['state_name']) || is_null($userInfoObject['personal_address']['state_name'])) {
             $this->userModel->setStateName($userInfoObject['personal_address']['state_name']);
             $finalUserResponse['response']['state_name'] = $this->userModel->getStateName();
         }
-        if(isset($userInfoObject['personal_address']['country_code']) || is_null($userInfoObject['personal_address']['country_code'])){
+        if(isset($userInfoObject['personal_address']['country_code']) || is_null($userInfoObject['personal_address']['country_code'])) {
             $this->userModel->setCountryCode($userInfoObject['personal_address']['country_code']);
             $finalUserResponse['response']['country_code'] = $this->userModel->getCountryCode();
         }
-        if(isset($userInfoObject['personal_address']['country_name']) || is_null($userInfoObject['personal_address']['country_name'])){
+        if(isset($userInfoObject['personal_address']['country_name']) || is_null($userInfoObject['personal_address']['country_name'])) {
             $this->userModel->setCountryName($userInfoObject['personal_address']['country_name']);
             $finalUserResponse['response']['country_name'] = $this->userModel->getCountryName();
         }
@@ -740,7 +704,6 @@ class UserObjectFactory
      * @return array $userInfoResponse
      * @author gmathur
      */
-
     private function setUserInfoSession($userInfo)
     {
         $userHelper = new UserHelper();
@@ -757,5 +720,4 @@ class UserObjectFactory
 
         return $userInfoResponse;
     }
-
 }

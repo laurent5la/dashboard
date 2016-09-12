@@ -10,10 +10,9 @@ use Config;
 
 class OwlClient
 {
-    /** @var OwlClient $owlClient  */
-    private static $owlClient;
+    private static $owlClient = NULL;
     private $owlConfig;
-    /** @var  Client $guzzleClient */
+    /** @var  Client */
     private $guzzleClient;
     private $cacheKeyForOWLToken;
     private $cacheKeyForOWLRefreshToken;
@@ -25,17 +24,19 @@ class OwlClient
     private $getRequestAttempts = 0;
     private $postRequestAttempts = 0;
 
+    /**
+     * @return OwlClient
+     */
     public static function getInstance() {
-        if (null === static::$owlClient) {
-            static::$owlClient = new OwlClient();
+        if (is_null(self::$owlClient)) {
+            self::$owlClient = new OwlClient();
         }
-        return static::$owlClient;
+        return self::$owlClient;
     }
 
     public function init()
     {
         $this->owlConfig = app()['config'];
-
         if (is_null($this->guzzleClient)) {
             $this->guzzleClient = new client();
         }
@@ -44,7 +45,10 @@ class OwlClient
         $this->clientSecret = $this->owlConfig->get('owl.client_secret');
         $this->cacheKeyForOWLToken = 'OWL-TOKEN' . '-' . $this->clientID;
         $this->cacheKeyForOWLRefreshToken = 'OWL-REFRESH-TOKEN' . '-' . $this->clientID;
-        $this->logFactory = new LogFactory();
+
+        if (is_null($this->logFactory)) {
+            $this->logFactory = new LogFactory();
+        }
     }
 
     /**
@@ -54,9 +58,9 @@ class OwlClient
     public function setHeaders($accessToken, $additions=[])
     {
         $headerArray = array_merge(
-            array(
+            [
                 'access-token' => $accessToken,
-            ),
+            ],
             $this->xSSLOptions,
             $additions
         );
@@ -77,6 +81,7 @@ class OwlClient
             return Cache::get($this->cacheKeyForOWLToken);
         } else {
             $logFactory->writeInfoLog("refreshing access token");
+
             $accessToken = $this->refreshAccessToken();
             return $accessToken;
         }
@@ -89,7 +94,7 @@ class OwlClient
     {
         $this->init();
         $logFactory = new LogFactory();
-        $logTime = array();
+        $logTime = [];
         $logTime['start'] = time();
 
         // removing expired token from the cache
@@ -125,6 +130,7 @@ class OwlClient
 
     public function owlGetRequest($url, $params, $userToken="")
     {
+
         $this->init();
         $accessToken = $this->getAccessToken();
         $logFactory = new LogFactory();
@@ -132,16 +138,16 @@ class OwlClient
         try {
             if($userToken) {
                 $this->setHeaders($accessToken, ['user-token'=>$userToken]);
-            } else {
+            } else
                 $this->setHeaders($accessToken, []);
-            }
 
             $response = $this->owlGetRequestHelper(env('OWL_API_URL').$url, $params);
         }
         catch (ClientException $e) {
             $logFactory->writeErrorLog("Error in OwlClient.php - OwlGetRequest - ".$e->getMessage());
+            $response = [];
         }
-
+        //why return response in exception case?
         return $response;
     }
 
@@ -156,13 +162,12 @@ class OwlClient
         try {
             $request = $this->guzzleClient->get($url, $params);
             $result = $request->getBody();
-            $response = json_decode($result,true);
+            $response = json_decode($result, true);
 
             if(isset($response['meta']['code'])) {
-                if($response['meta']['code']>400 && $response['meta']['code']<=500) {
-                    if($response['meta']['code']==500 || $this->getRequestAttempts>=2) {
+                if($response['meta']['code'] > 400 && $response['meta']['code'] <= 500) {
+                    if($response['meta']['code'] == 500 || $this->getRequestAttempts >= 2) {
                         $logFactory->writeErrorLog($response);
-
                         abort(500);
                     }
 
@@ -174,16 +179,14 @@ class OwlClient
                     $logMessage = array();
                     $logMessage['OwlClient->owlGetRequestHelper'] = "Invalid Access Token. Deleted from cache and got a new one.";
                     $logFactory->writeInfoLog($logMessage);
-                }
-
-                else if ($response['meta']['code'] == 400) {
+                } else if ($response['meta']['code'] == 400) {
                     $logMessage = array();
                     $logMessage['OwlClient->owlGetRequestHelper'] = $response;
                     $logFactory->writeInfoLog($logMessage);
                 }
             }
         }
-        catch (\Exception $e) {
+        catch (Exception $e) {
             if ($e->getCode() === 401) {
                 Cache::forget($this->cacheKeyForOWLToken);
                 $logFactory->writeErrorLog("getting a 401");
@@ -199,7 +202,7 @@ class OwlClient
         return $response;
     }
 
-    public function owlPostRequest($url, $params, $userTokenInHeader = false)
+    public function owlPostRequest($url, $params)
     {
         $this->init();
         $accessToken = $this->getAccessToken();
@@ -211,12 +214,13 @@ class OwlClient
                 $this->logFactory->writeErrorLog("Error in OwlClient.php - OwlPostRequest - Missing Access Token");
             }
             $response = $this->owlPostRequestHelper(env('OWL_API_URL').$url, $params);
-        }
-        catch (ClientException $e) {
+        } catch (ClientException $e) {
             $this->logFactory->writeErrorLog("Error in OwlClient.php - OwlGetRequest - ".$e->getMessage());
         }
-
-        return $response;
+        if (isset($response)) {
+            return $response;
+        }
+        return [];
     }
 
     public function owlPostRequestHelper($url, $params)
@@ -233,31 +237,25 @@ class OwlClient
             $response = json_decode($result,true);
 
             if(isset($response['meta']['code'])) {
-                if($response['meta']['code']>400 && $response['meta']['code']<=500) {
-                    if($response['meta']['code']==500 || $this->postRequestAttempts>=2) {
+                if($response['meta']['code'] == 500) {
+                    if($this->postRequestAttempts>=2) {
                         $logFactory->writeErrorLog($response);
                         abort(500);
                     }
-
                     $this->postRequestAttempts = $this->postRequestAttempts + 1;
-
                     Cache::forget($this->cacheKeyForOWLToken);
                     $response = $this->owlPostRequest($url, $params);
 
                     $logMessage = array();
                     $logMessage['OwlClient->owlPostRequestHelper'] = "Invalid Access Token. Deleted from cache and got a new one.";
                     $logFactory->writeInfoLog($logMessage);
-                }
-
-                else if ($response['meta']['code'] == 400) {
+                } else if ($response['meta']['code'] == 400) {
                     $logMessage = array();
                     $logMessage['OwlClient->owlPostRequestHelper'] = $response;
                     $logFactory->writeInfoLog($logMessage);
                 }
             }
-        }
-
-        catch (\Exception $e) {
+        } catch (Exception $e) {
             if ($e->getCode() === 401) {
                 Cache::forget($this->cacheKeyForOWLToken);
                 $logFactory->writeErrorLog("getting a 401");
@@ -266,7 +264,6 @@ class OwlClient
         }
         $logTime['stop'] = time();
         $logTime['elapsed'] = $logTime['stop'] - $logTime['start'];
-
         $logFactory->writeAPILog("POST", $logTime, $url, $params, $response);
 
         return $response;
@@ -275,7 +272,7 @@ class OwlClient
     public function isValidEndpoint($url)
     {
         $getOWLEndpoints = Config::get("owl_endpoints");
-        if(in_array($url, $getOWLEndpoints))
+        if(in_array($url,$getOWLEndpoints))
             return true;
         return false;
     }

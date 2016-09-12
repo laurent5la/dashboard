@@ -1,5 +1,5 @@
 <?php
-namespace App\Models;
+namespace App\Models\Helpers;
 
 //TODO: Adding this class for compatability with UserObjectFactory
 

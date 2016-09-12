@@ -39,6 +39,7 @@ class UserController extends Controller {
     {
         $logFactory = new LogFactory();
         $params = Request::json()->all();
+        $secureParams = $this->cleanParams($params);
 
         if(!is_array($params)) {
             $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
@@ -47,7 +48,7 @@ class UserController extends Controller {
                 $this->setParamsForResetPassword($params);
                 $this->timingStart(__METHOD__);
                 $userMapper = $this->getUserMapper();
-                $userObject = $userMapper->forgotPassword($params);
+                $userObject = $userMapper->forgotPassword($secureParams);
                 $this->timingEnd($logFactory);
                 return $userObject;
             } else {
@@ -80,6 +81,7 @@ class UserController extends Controller {
     {
         $logFactory = new LogFactory();
         $params = Request::json()->all();
+        $secureParams = $this->cleanParams($params);
 
         if(!is_array($params))
         {
@@ -89,7 +91,7 @@ class UserController extends Controller {
         {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
-            $userObject = $userMapper->changePassword($params);
+            $userObject = $userMapper->changePassword($secureParams);
             $this->timingEnd($logFactory);
             return $userObject;
         }
