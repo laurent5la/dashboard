@@ -269,6 +269,7 @@ class OwlFactory extends OwlClient
         $this->userActivities = empty($userSession) ? [] : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 5 - User is trying to reset the password with email - ".$resetPasswordInput['email']);
         $resetPasswordURL = $this->config->get('cart_endpoints.user_password_reset');
+        $resetPasswordResponse = [];
         if(parent::isValidEndpoint($resetPasswordURL)) {
             $params = [
                 'email'             => $resetPasswordInput['email'],
@@ -283,13 +284,11 @@ class OwlFactory extends OwlClient
             $owlInstance = OwlClient::getInstance();
             $resetPasswordResponse = $owlInstance->owlPostRequest($resetPasswordURL, $params);
             Session::set('user_activity', $this->userActivities);
-            return $resetPasswordResponse;
         } else {
             $logMessage['OwlFactory->sendResetPasswordEmail']['Reset_Password_Endpoint'] = 'Invalid Reset Password Endpoint';
             $this->logFactory->writeErrorLog($logMessage);
-            return null;
         }
-
+        return $resetPasswordResponse;
     }
 
     /**
@@ -306,8 +305,8 @@ class OwlFactory extends OwlClient
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 6 - User is trying to change the password");
         $resetPasswordURL = $this->config->get('cart_endpoints.user_password_change');
-        if(parent::isValidEndpoint($resetPasswordURL))
-        {
+        $changePasswordResponse = [];
+        if(parent::isValidEndpoint($resetPasswordURL)) {
             $userHelper = new UserHelper();
             $userToken = $userHelper->getUserTokenFromSession();
             array_push($this->userActivities, "User is trying to update the password with User Token - ".$userToken);
@@ -320,14 +319,10 @@ class OwlFactory extends OwlClient
             $owlInstance = OwlClient::getInstance();
             $changePasswordResponse = $owlInstance->owlPostRequest($resetPasswordURL, $params);
             Session::set('user_activity', $this->userActivities);
-            return $changePasswordResponse;
-        }
-
-        else
-        {
+        } else {
             $logMessage['OwlFactory->userLogin']['Change_Password_Endpoint'] = 'Invalid Change Password Endpoint';
             $this->logFactory->writeErrorLog($logMessage);
-            return null;
         }
+        return $changePasswordResponse;
     }
 }
