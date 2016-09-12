@@ -32,195 +32,11 @@ class UserObjectFactory
         $this->logFactory = new LogFactory();
     }
 
-    /**
-     * Returns the User Information
-     *
-     * @param array $params {
-     *     @var string $email email of the user
-     *     @var string $password password of the user
-     * }
-     * @return JSON UserInfoObject $finalLoginResponse Final User Response Object consisting of personal, billing and tax information
-     * @use App\Mapper\OwlFactory::__construct()
-     * @use App\Models\User::__construct()
-     * @author Kunal
-     */
-    public function retrieveUserDashboardInfo($params)
-    {
-        $retrieveUserToken = $this->owlFactory->userLogin($params['email'], $params['password']);
-
-        if ($retrieveUserToken && isset($retrieveUserToken['meta'])) {
-            switch ($retrieveUserToken['meta']['code']) {
-                case '200':
-//                    Session::set('failed_attempts', 0);
-                    $userToken = $retrieveUserToken['response']['user_token'];
-                    $userRefreshToken = $retrieveUserToken['response']['refresh_token'];
-                    $this->crossCookie->login($userToken, $userRefreshToken);
-
-//                    $userInfoObject = $this->owlFactory->getUserInfo($userToken);
-
-//                    if(isset($userInfoObject['user']['Personal_Information']['user_status_code']) &&
-//                        $userInfoObject['user']['Personal_Information']['user_status_code'] === "RESET")
-//                    {
-//                        Session::put("temporary_password", $params['password']);
-//                    }
-//
-//                    if(isset($userInfoObject['user']['Billing_Information']))
-//                        $userBillingInfoObject = $userInfoObject['user']['Billing_Information'];
-//                    else
-//                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
-//
-//                    if(isset($userInfoObject['user']['Personal_Information']))
-//                        $userPersonalInfoObject = $userInfoObject['user']['Personal_Information'];
-//                    else
-//                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
-//
-//                    $this->prepareAvalaraAddressValidate($userPersonalInfoObject);
-                    if(isset($userPersonalInfoObject['user_type_code']) && $userPersonalInfoObject['user_type_code'] != 'EXT')
-                    {
-                        $errorMsg = 'You\'re not authorized to access this portal.';
-                        $errorArray = array(
-                            'meta_code' => 408,
-                            'response' => array(
-                                'message' => $errorMsg,
-                            ),
-                        );
-                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['User_Type'] = $errorArray;
-                        $this->logFactory->writeErrorLog($this->logMessage);
-                        return json_encode($errorArray);
-                    }
-                    elseif(!isset($userPersonalInfoObject['user_type_code']))
-                    {
-                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['User_Type'] = "Missing User Type Code";
-                        $this->logFactory->writeErrorLog($this->logMessage);
-                    }
-                    else
-                    {
-//                        $calculatedTaxResponse = $this->prepareTaxRequestResponse($userPersonalInfoObject);
-//                        $updatedCartResponse = $this->updateCartContentsWithTax($calculatedTaxResponse);
-                        $userPersonalInfoObject = $this->formatUserObjectResponse($userPersonalInfoObject);
-
-                        $errorFlag = false;
-//                        if($userBillingInfoObject == '')
-//                        {
-//                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-//                            $finalLoginResponse['error_code'] = 'update_user_tax';
-//                            $finalLoginResponse['error_message'] = '';
-//                            $errorFlag = true;
-//                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Billing_Information'] = "Missing Billing Information";
-//                        }
-//                        if($userPersonalInfoObject == '' || count($userPersonalInfoObject) == 0)
-//                        {
-//                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-//                            $finalLoginResponse['error_code'] = 'update_billing_tax';
-//                            $finalLoginResponse['error_message'] = '';
-//                            $errorFlag = true;
-//                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Personal_Information'] = "Missing Personal Information";
-//                        }
-//                        if(strlen($calculatedTaxResponse['response']['TaxRate']) == 0)
-//                        {
-//                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-//                            $finalLoginResponse['error_code'] = 'update_user_billing';
-//                            $finalLoginResponse['error_message'] = '';
-//                            $errorFlag = true;
-//                            $this->logMessage['UserObjectFactory->retrieveUserInfo']['Tax_Information'] = "Missing Avalara Tax Information";
-//                        }
-                        if($errorFlag == false)
-                        {
-                            $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
-                            $finalLoginResponse['error_code'] = '';
-                            $finalLoginResponse['error_message'] = '';
-                            $this->logFactory->writeInfoLog("Login Success");
-                        }
-//                        $finalLoginResponse['response']['user']['Personal_Information'] = $userPersonalInfoObject;
-//                        $finalLoginResponse['response']['user']['Billing_Information'] = $userBillingInfoObject;
-//                        $finalLoginResponse['response']['cart'] = $updatedCartResponse;
-                        $finalLoginResponse['response']['user']['Personal_Information']['response']['user_token'] = $userToken;
-
-                        if($this->logMessage != '')
-                            $this->logFactory->writeErrorLog($this->logMessage);
-
-                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['Response'] = $finalLoginResponse;
-                        $this->logFactory->writeInfoLog($finalLoginResponse);
-
-                        $loginResponse = $this->setUserInfoSession($finalLoginResponse);
-                        return json_encode($loginResponse);
-                    }
-                    break;
-                case '400':
-                case '401':
-                case '402':
-                    $activityLog = Array();
-                    $activityLog["activity_log"] = Session::get('user_activity');
-                    $this->logFactory->writeActivityLog($activityLog);
-                    $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-                    $finalLoginResponse['error_code'] = 'display_message';
-                    $finalLoginResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
-                    return json_encode($finalLoginResponse);
-                    break;
-                case '403':
-//                    @TODO Enable it for failed login attempts
-//                    if(Session::get('failed_attempts'))
-//                        $failedLoginAttempts = Session::get('failed_attempts');
-//                    else
-//                        $failedLoginAttempts = 0;
-//                    $failedLoginAttempts += 1;
-//                    Session::set('failed_attempts', $failedLoginAttempts);
-//                    if($failedLoginAttempts >= 3)
-//                    {
-//                        $errorMsg = 'You\'ve exceeded maximum failed attempts! Please contact the customer support.';
-//                        $errorArray = array(
-//                            'meta_code' => 500,
-//                            'response' => array(
-//                                'message' => $errorMsg,
-//                            ),
-//                        );
-//                    }
-//                    else
-//                    {
-                    $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
-                    $errorArray = array(
-                        'meta_code' => $retrieveUserToken['meta']['code'],
-                        'response' => array(
-                            'message' => $errorMsg,
-                        ),
-                    );
-                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $errorArray;
-                    $this->logFactory->writeInfoLog($errorArray);
-
-//                    }
-
-                    return json_encode($errorArray);
-                    break;
-
-                case '404':
-                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = 'Page Not Found';
-                    $this->logFactory->writeErrorLog($this->logMessage);
-                    break;
-
-                default:
-                    $errorMsg = $this->config->get('Enums.Status.MESSAGE');
-                    $errorArray = array(
-                        'meta_code' => 500,
-                        'response' => array(
-                            'message' => $errorMsg,
-                        ),
-                    );
-                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $errorArray;
-                    $this->logFactory->writeErrorLog($errorArray);
-                    return $errorArray;
-                    break;
-            }
-        }else{
-            $this->logFactory->writeErrorLog("Login Failure");
-        }
-    }
-
-
 
     public function authenticateUser($params)
     {
         $retrieveUserToken = $this->owlFactory->retrieveUserToken($params['email'], $params['password']);
-        $finalLoginResponse = array();
+        $finalLoginResponse = [];
 
         if ($retrieveUserToken && isset($retrieveUserToken['meta'])) {
             switch ($retrieveUserToken['meta']['code']) {
@@ -229,18 +45,19 @@ class UserObjectFactory
                     $basicUserInfoArray = $this->owlFactory->isUserTokenValid($userToken);
                     
                     if(!is_null($basicUserInfoArray) && $basicUserInfoArray["response"]["status"] == "valid") {
-                        $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
-                        $finalLoginResponse['error_code'] = '';
-                        $finalLoginResponse['error_message'] = '';
+                        $loginResponse = [];
+                        $loginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
+                        $loginResponse['error_code'] = '';
+                        $loginResponse['error_message'] = '';
                         $this->logFactory->writeInfoLog("Login Success");
-                        $finalLoginResponse["response"]["user"] = $basicUserInfoArray["response"];
+                        $loginResponse["response"]["user"] = $basicUserInfoArray["response"];
+                        $loginResponse["response"]["user"]["user_token"] = $userToken;
+                        $finalLoginResponse = $this->setUserInfoSession($loginResponse);
                     } else {
                         $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                         $finalLoginResponse['error_code'] = 'invalid_user_token_status';
                         $finalLoginResponse['error_message'] = '';
                     }
-
-                    return $finalLoginResponse;
 
                     break;
                 case '400':
@@ -252,7 +69,6 @@ class UserObjectFactory
                     $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                     $finalLoginResponse['error_code'] = 'display_message';
                     $finalLoginResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
-                    return json_encode($finalLoginResponse);
                     break;
                 case '403':
 //                    @TODO Enable it for failed login attempts
@@ -310,6 +126,7 @@ class UserObjectFactory
         }else{
             $this->logFactory->writeErrorLog("Login Failure");
         }
+        return json_encode($finalLoginResponse);
     }
 
     /**
@@ -320,26 +137,22 @@ class UserObjectFactory
     public function logoutUser($crossCookieMock = null)
     {
         $userHelper = new UserHelper();
+        $finalLogoutResponse = [];
+        //Once the login flow for storing user token in session is complete, getUserTokenFromSession can be worked on
         $userToken = $userHelper->getUserTokenFromSession();
 
-        if(strlen($userToken)!=0)
-        {
+        if(strlen($userToken)!=0) {
             $logoutOwlResponse = $this->owlFactory->userLogout($userToken);
-            if(isset($logoutOwlResponse['meta']['code']))
-            {
+            if(isset($logoutOwlResponse['meta']['code'])) {
                 switch($logoutOwlResponse['meta']['code'])
                 {
                     case '200':
                     {
-                        if($logoutOwlResponse['response']['logout']==1)
-                        {
+                        if($logoutOwlResponse['response']['logout']==1) {
                             $finalLogoutResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                             $finalLogoutResponse['error_code'] = '';
                             $finalLogoutResponse['error_message'] = '';
-                        }
-
-                        else
-                        {
+                        } else {
                             $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = isset($logoutOwlResponse['error'][0]) ? $logoutOwlResponse['error'][0] : "OWL returned ".$logoutOwlResponse['meta']['code'];
                             $this->logFactory->writeErrorLog($this->logMessage);
                         }
@@ -368,24 +181,16 @@ class UserObjectFactory
                         break;
                     }
                 }
-            }
-
-            else
-            {
+            } else {
                 $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = "Meta code missing from the logout response.";
                 $this->logFactory->writeErrorLog($this->logMessage);
             }
 
-        }
-
-        else
-        {
+        } else {
             $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = "User Token not found in session. User might already have logged out";
             $this->logFactory->writeInfoLog($this->logMessage);
         }
         $userHelper->unsetUserSession();
-
-        $finalLogoutResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
 
         return json_encode($finalLogoutResponse);
     }
@@ -940,15 +745,15 @@ class UserObjectFactory
     {
         $userHelper = new UserHelper();
 
-        $userDetail = isset($userInfo['response']['user']['user_detail']) ? $userInfo['response']['user']['user_detail'] : array();
+        $userDetail = isset($userInfo['response']['user']) ? $userInfo['response']['user'] : [];
 
         $userHelper->setUserSession($userDetail);
 
-        $userInfoResponse = array();
-        $userInfoResponse['status'] = isset($userDetail['status']) ? $userDetail['status'] : 0;
-        $userInfoResponse['error_code'] = isset($userDetail['error_code']) ? $userDetail['error_code'] : "";
-        $userInfoResponse['error_message'] = isset($userDetail['error_message']) ? $userDetail['error_message'] : "";
-        $userInfoResponse['response']['user']['user_detail'] = isset($userDetail['response']['user']['user_detail']) ? $userDetail['response']['user']['user_detail'] : null;
+        $userInfoResponse = [];
+        $userInfoResponse['status'] = isset($userInfo['status']) ? $userInfo['status'] : 0;
+        $userInfoResponse['error_code'] = isset($userInfo['error_code']) ? $userInfo['error_code'] : "";
+        $userInfoResponse['error_message'] = isset($userInfo['error_message']) ? $userInfo['error_message'] : "";
+        $userInfoResponse['response']['user'] = isset($userInfo['response']['user']) ? $userInfo['response']['user'] : [];
 
         return $userInfoResponse;
     }

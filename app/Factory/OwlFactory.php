@@ -77,6 +77,7 @@ class OwlFactory extends OwlClient
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 2 - User is logging out with User Token - $userToken");
 		$userLogoutURL = $this->config->get('owl_endpoints.user_logout');
+        $owlPostClient = null;
 
 		if ($this->isValidEndpoint($userLogoutURL))
 		{
@@ -94,14 +95,13 @@ class OwlFactory extends OwlClient
             $owlInstance = OwlClient::getInstance();
             $owlPostClient = $owlInstance->owlPostRequest($userLogoutURL, $jsonFormatParams, true);
             Session::set('user_activity', $this->userActivities);
-            return $owlPostClient;
         }
 		else
 		{
 			$this->logMessage['OwlFactory->userLogout']['Logout_Endpoint'] = 'Invalid Logout Endpoint';
 			$this->logFactory->writeErrorLog($this->logMessage);
-            return null;
 		}
+        return $owlPostClient;
 	}
 
     public function userRegister($params)

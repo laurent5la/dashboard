@@ -15,4 +15,5 @@ Route::get('/user', 'UserController@index');
 Route::post('/user/reset-password', 'UserController@resetPassword');
 Route::post('/user/change-password', 'UserController@changePassword');
 Route::post('/user/login', 'UserController@login');
+Route::post('/user/logout', 'UserController@logout');
 Route::post('/user/register', 'UserController@register');

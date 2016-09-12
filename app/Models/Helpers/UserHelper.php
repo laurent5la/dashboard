@@ -1,7 +1,7 @@
 <?php
 namespace App\Models\Helpers;
 
-use App\Mapper\LogFactory;
+use App\Factory\LogFactory;
 use Config;
 use Session;
 use App\Models\ShoppingCart;
@@ -196,11 +196,12 @@ class UserHelper
     public function getUserTokenFromSession()
     {
         $userToken = '';
+
         if(Session::has('user'))
         {
-            if(Session::has('user.response.user.Personal_Information.response.user_token'))
+            if(Session::has('user.user_token'))
             {
-                $userToken = Session::get('user.response.user.Personal_Information.response.user_token');
+                $userToken = Session::get('user.user_token');
             }
             else
             {
