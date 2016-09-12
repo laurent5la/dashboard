@@ -220,18 +220,27 @@ class UserObjectFactory
     public function authenticateUser($params)
     {
         $retrieveUserToken = $this->owlFactory->retrieveUserToken($params['email'], $params['password']);
+        $finalLoginResponse = array();
 
         if ($retrieveUserToken && isset($retrieveUserToken['meta'])) {
             switch ($retrieveUserToken['meta']['code']) {
                 case '200':
-//                    Session::set('failed_attempts', 0);
                     $userToken = $retrieveUserToken['response']['user_token'];
-                    $userRefreshToken = $retrieveUserToken['response']['refresh_token'];
-                    $this->crossCookie->login($userToken, $userRefreshToken);
+                    $basicUserInfoArray = $this->owlFactory->isUserTokenValid($userToken);
+                    
+                    if(!is_null($basicUserInfoArray) && $basicUserInfoArray["response"]["status"] == "valid") {
+                        $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
+                        $finalLoginResponse['error_code'] = '';
+                        $finalLoginResponse['error_message'] = '';
+                        $this->logFactory->writeInfoLog("Login Success");
+                        $finalLoginResponse["response"]["user"] = $basicUserInfoArray["response"];
+                    } else {
+                        $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+                        $finalLoginResponse['error_code'] = 'invalid_user_token_status';
+                        $finalLoginResponse['error_message'] = '';
+                    }
 
-                    $userInfoObject = $this->owlFactory->getUserDetail($userToken);
-
-                    return $userInfoObject;
+                    return $finalLoginResponse;
 
                     break;
                 case '400':
@@ -375,8 +384,6 @@ class UserObjectFactory
             $this->logFactory->writeInfoLog($this->logMessage);
         }
         $userHelper->unsetUserSession();
-        $shoppingCart = new ShoppingCart();
-        $shoppingCart->clearCartSessionAndCookie($crossCookieMock);
 
         $finalLogoutResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
 
@@ -412,69 +419,24 @@ class UserObjectFactory
         if (isset($retrieveUserToken['meta'])) {
             switch ($retrieveUserToken['meta']['code']) {
                 case '200':
+                    $userDetailObjectOutput = array();
                     $userToken = $retrieveUserToken['response']['user_token'];
                     $userRefreshToken = $retrieveUserToken['response']['refresh_token'];
                     $this->crossCookie->login($userToken, $userRefreshToken);
 
-                    $userInfoObject = $this->owlFactory->getUserInfo($userToken);
+                    $userDetailObject = $this->owlFactory->getUserDetail($userToken);
 
-                    if(isset($userInfoObject['user']['Personal_Information']))
-                        $userPersonalInfoObject =  $userInfoObject['user']['Personal_Information'];
+                    if(isset($userInfoObject['user']['user_detail']))
+                        $userDetailObjectOutput =  $userDetailObject['user']['user_detail'];
                     else
-                        $this->logMessage['UserObjectFactory->storeUserInfo']['Personal_Information'] = "Missing Personal Information";
+                        $this->logMessage['UserObjectFactory->storeUserInfo']['user_detail'] = "Missing User Detail Information";
 
-                    if(isset($userPersonalInfoObject['user_type_code']) && $userPersonalInfoObject['user_type_code'] != 'EXT')
-                    {
-                        $errorMsg = 'You\'re not authorized to access this portal.';
-                        $errorArray = array(
-                            'meta_code' => 408,
-                            'response' => array(
-                                'message' => $errorMsg,
-                            ),
-                        );
-                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['User_Type'] = $errorArray;
-                        $this->logFactory->writeErrorLog($this->logMessage);
-                        return json_encode($errorArray);
-                    }
-                    elseif(!isset($userPersonalInfoObject['user_type_code']))
-                    {
-                        $this->logMessage['UserObjectFactory->retrieveUserInfo']['User_Type'] = "Missing User Type Code";
-                        $this->logFactory->writeErrorLog($this->logMessage);
-                    }
-                    else
-                    {
-                        $calculatedTaxResponse = $this->prepareTaxRequestResponse($userPersonalInfoObject);
-                        $updatedCartResponse = $this->updateCartContentsWithTax($calculatedTaxResponse);
-                        $userPersonalInfoObject = $this->formatUserObjectResponse($userPersonalInfoObject);
-
-                        $errorFlag = false;
-                        if($userPersonalInfoObject == '' || count($userPersonalInfoObject) == 0)
-                        {
-                            $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-                            $finalRegisterResponse['error_code'] = 'update_billing_tax';
-                            $finalRegisterResponse['error_message'] = '';
-                            $errorFlag = true;
-                            $this->logMessage['UserObjectFactory->storeUserInfo']['Personal_Information'] = "Missing Personal Information";
-                        }
-
-                        if(strlen($calculatedTaxResponse['response']['TaxRate']) == 0)
-                        {
-                            $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
-                            $finalRegisterResponse['error_code'] = 'update_user_billing';
-                            $finalRegisterResponse['error_message'] = '';
-                            $errorFlag = true;
-                            $this->logMessage['UserObjectFactory->storeUserInfo']['Tax_Information'] = "Missing Avalara Tax Information";
-                        }
-                        if($errorFlag == false)
-                        {
-                            $finalRegisterResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
-                            $finalRegisterResponse['error_code'] = '';
-                            $finalRegisterResponse['error_message'] = '';
-                            $this->logFactory->writeInfoLog("Register Success");
-                        }
-                        $finalRegisterResponse['response']['user']['Personal_Information'] = $userPersonalInfoObject;
-                        $finalRegisterResponse['response']['cart'] = $updatedCartResponse;
-                        $finalRegisterResponse['response']['user']['Personal_Information']['response']['user_token'] = $userToken;
+                        $finalRegisterResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
+                        $finalRegisterResponse['error_code'] = '';
+                        $finalRegisterResponse['error_message'] = '';
+                        $this->logFactory->writeInfoLog("Register Success");
+                        $finalRegisterResponse['response']['user']['user_detail'] = $userDetailObjectOutput;
+                        $finalRegisterResponse['response']['user']['user_detail']['response']['user_token'] = $userToken;
 
                         if($this->logMessage != '')
                             $this->logFactory->writeErrorLog($this->logMessage);
@@ -485,7 +447,6 @@ class UserObjectFactory
                         $registerResponse = $this->setUserInfoSession($finalRegisterResponse);
 
                         return json_encode($registerResponse);
-                    }
                     break;
 
                 case '400':
@@ -979,48 +940,15 @@ class UserObjectFactory
     {
         $userHelper = new UserHelper();
 
-        $billingInfo = isset($userInfo['response']['user']['Billing_Information']) ? $userInfo['response']['user']['Billing_Information'] : array();
+        $userDetail = isset($userInfo['response']['user']['user_detail']) ? $userInfo['response']['user']['user_detail'] : array();
 
-        $cartInfo = isset($userInfo['response']['cart']) ? $userInfo['response']['cart'] : array();
-
-        if(isset($billingInfo) && count($billingInfo)!=0)
-        {
-            $creditCardInfo = isset($billingInfo['response']['credit_card_details']) ? $billingInfo['response']['credit_card_details'] : null;
-            $formattedCCInfoSlug = $userHelper->prefixPaymentToken($creditCardInfo);
-            $userInfo['response']['user']['Billing_Information']['response']['credit_card_details'] = $formattedCCInfoSlug;
-        }
-
-        if(isset($cartInfo) && count($cartInfo)!=0)
-        {
-            $userInfo['response']['cart'] = $cartInfo;
-        }
-
-        $userHelper->setUserSession($userInfo);
-
-        $formattedCCInfo = array();
-
-        if(isset($formattedCCInfoSlug) && count($formattedCCInfoSlug)!=0)
-        {
-            $formattedCCInfo = $userHelper->setCreditCardinfo($formattedCCInfoSlug);
-        }
+        $userHelper->setUserSession($userDetail);
 
         $userInfoResponse = array();
-        $userInfoResponse['status'] = isset($userInfo['status']) ? $userInfo['status'] : 0;
-        $userInfoResponse['error_code'] = isset($userInfo['error_code']) ? $userInfo['error_code'] : "";
-        $userInfoResponse['error_message'] = isset($userInfo['error_message']) ? $userInfo['error_message'] : "";
-        $userInfoResponse['response']['user']['Personal_Information'] = isset($userInfo['response']['user']['Personal_Information']) ? $userInfo['response']['user']['Personal_Information'] : null;
-        $userInfoResponse['response']['user']['Billing_Information']['response']['credit_card_details'] = isset($formattedCCInfo) ? $formattedCCInfo : "";
-        $userInfoResponse['response']['cart'] = $cartInfo;
-
-        /**
-         * Not sending user_identifier and user_token to the front-end.
-         */
-
-        if(isset($userInfoResponse['response']['user']['Personal_Information']['response']['user_identifier']))
-            unset( $userInfoResponse['response']['user']['Personal_Information']['response']['user_identifier']);
-
-        if(isset($userInfoResponse['response']['user']['Personal_Information']['response']['user_token']))
-            unset( $userInfoResponse['response']['user']['Personal_Information']['response']['user_token']);
+        $userInfoResponse['status'] = isset($userDetail['status']) ? $userDetail['status'] : 0;
+        $userInfoResponse['error_code'] = isset($userDetail['error_code']) ? $userDetail['error_code'] : "";
+        $userInfoResponse['error_message'] = isset($userDetail['error_message']) ? $userDetail['error_message'] : "";
+        $userInfoResponse['response']['user']['user_detail'] = isset($userDetail['response']['user']['user_detail']) ? $userDetail['response']['user']['user_detail'] : null;
 
         return $userInfoResponse;
     }

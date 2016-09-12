@@ -74,14 +74,12 @@ class OwlClient
     {
         $logFactory = new LogFactory();
 
-        if (Cache::has($this->cacheKeyForOWLToken))
-        {
-            $logFactory->writeInfoLog("access token cached");
+        if (Cache::has($this->cacheKeyForOWLToken)) {
+            $logFactory->writeInfoLog("retrieving access token from cache");
             return Cache::get($this->cacheKeyForOWLToken);
-        }
-        else
-        {
-            $logFactory->writeInfoLog("access token refreshed");
+        } else {
+            $logFactory->writeInfoLog("refreshing access token");
+
             $accessToken = $this->refreshAccessToken();
             return $accessToken;
         }
