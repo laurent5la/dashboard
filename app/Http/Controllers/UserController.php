@@ -94,7 +94,7 @@ class UserController extends Controller {
      * Backend action to send the reset password request
      *
      * @return array
-     * @since 16.13
+     * @since 16.12
      * @author mvalenzuela
      */
     public function resetPassword()
@@ -123,7 +123,7 @@ class UserController extends Controller {
     /**
      * Sets parameters for reset password
      * @param Array $params
-     * @since 16.13
+     * @since 16.12
      * @author mvalenzuela
      */
     private function setParamsForResetPassword(&$params)
@@ -136,7 +136,7 @@ class UserController extends Controller {
     /**
      * Backend action to change the password after reset request.
      * @return array
-     * @since 16.13
+     * @since 16.12
      * @author mvalenzuela
      */
     public function newPassword()
