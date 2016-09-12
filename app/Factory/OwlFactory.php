@@ -20,18 +20,15 @@ use Config;
 class OwlFactory extends OwlClient
 {
     private $config;
-<<<<<<< HEAD:app/Mapper/OwlFactory.php
-=======
+
     private $userToken = '';
->>>>>>> 52f9fb5646fd8fc673fb47696709235f2b743d32:app/Factory/OwlFactory.php
+
     private $logFactory;
 
     public function __construct()
     {
         $this->config = app()['config'];
         $this->logFactory = new LogFactory();
-<<<<<<< HEAD:app/Mapper/OwlFactory.php
-=======
     }
 
     public function retrieveUserToken($email, $password)
@@ -217,8 +214,6 @@ class OwlFactory extends OwlClient
             $this->logFactory->writeErrorLog($this->logMessage);
             return null;
         }
-
->>>>>>> 52f9fb5646fd8fc673fb47696709235f2b743d32:app/Factory/OwlFactory.php
     }
 
     /**
