@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mapper;
+namespace App\Factory;
 
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;

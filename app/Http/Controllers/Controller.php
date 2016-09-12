@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Bus\DispatchesCommands;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Validation\ValidatesRequests;
-use App\Mapper\LogFactory;
+use App\Factory\LogFactory;
 
 abstract class Controller extends BaseController {
 
@@ -32,7 +32,7 @@ abstract class Controller extends BaseController {
     protected function timingStart($method)
     {
         $this->logTime[__CLASS__] = $method;
-        $this->logTime['start'] = time();
+        $this->logTime['start_time'] = time();
     }
 
     /**

@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Mapper\LogFactory;
+use App\Factory\LogFactory;
 use App\Mapper\UserMapper;
 use Request;
 use Config;
@@ -106,7 +106,7 @@ class UserController extends Controller {
     public function login()
     {
         $logFactory = new LogFactory();
-        $params = Request::json()->all();
+        $params = Request::all();
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params))

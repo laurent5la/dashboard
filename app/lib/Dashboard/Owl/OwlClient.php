@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Lib\Owl;
+namespace App\Lib\Dashboard\Owl;
 
-use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
-use App\Mapper\LogFactory;
+use App\Factory\LogFactory;
+use Cache;
 use Config;
 
 class OwlClient

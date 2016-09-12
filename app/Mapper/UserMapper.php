@@ -1,5 +1,6 @@
 <?php
 namespace App\Mapper;
+use App\Factory\UserObjectFactory;
 
 class UserMapper
 {
