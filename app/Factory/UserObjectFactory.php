@@ -202,56 +202,38 @@ class UserObjectFactory
      *     @var string $first_name first name of the user
      *     @var string $last_name last name of the user
      *     @var string $password password of the user
-     *     @var string $address_line_1 address line 1 of the user
-     *     @var string $address_line_2 address line 2 of the user
-     *     @var string $city city of the user
-     *     @var string $state_code state code of the user
-     *     @var string $country_code country code of the user
-     *     @var string $postal_code postal code of the user
-     *     @var string $phone_number phone number of the user
      * }
      *
      * @return JSON UserInfoObject $finalRegisterResponse Final User Response Object consisting of personal, billing and tax information
-     * @use App\Mapper\OwlFactory::__construct()
+     * @use App\Factory\OwlFactory::__construct()
      * @use App\Models\User::__construct()
-     * @author Kunal
+     * @author aprakash
      */
-
     public function storeUserInfo($params)
     {
         $retrieveUserToken = $this->owlFactory->userRegister($params);
+        $finalRegisterResponse = [];
 
         if (isset($retrieveUserToken['meta'])) {
             switch ($retrieveUserToken['meta']['code']) {
                 case '200':
-                    $userDetailObjectOutput = array();
                     $userToken = $retrieveUserToken['response']['user_token'];
-                    $userRefreshToken = $retrieveUserToken['response']['refresh_token'];
-                    $this->crossCookie->login($userToken, $userRefreshToken);
+                    $basicUserInfoArray = $this->owlFactory->isUserTokenValid($userToken);
 
-                    $userDetailObject = $this->owlFactory->getUserDetail($userToken);
-
-                    if(isset($userInfoObject['user']['user_detail']))
-                        $userDetailObjectOutput =  $userDetailObject['user']['user_detail'];
-                    else
-                        $this->logMessage['UserObjectFactory->storeUserInfo']['user_detail'] = "Missing User Detail Information";
-
-                        $finalRegisterResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
-                        $finalRegisterResponse['error_code'] = '';
-                        $finalRegisterResponse['error_message'] = '';
+                    if(!is_null($basicUserInfoArray) && $basicUserInfoArray["response"]["status"] == "valid") {
+                        $registerResponse = [];
+                        $registerResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
+                        $registerResponse['error_code'] = '';
+                        $registerResponse['error_message'] = '';
                         $this->logFactory->writeInfoLog("Register Success");
-                        $finalRegisterResponse['response']['user']['user_detail'] = $userDetailObjectOutput;
-                        $finalRegisterResponse['response']['user']['user_detail']['response']['user_token'] = $userToken;
-
-                        if($this->logMessage != '')
-                            $this->logFactory->writeErrorLog($this->logMessage);
-
-                        $this->logMessage['UserObjectFactory->storeUserInfo']['Response'] = $finalRegisterResponse;
-                        $this->logFactory->writeInfoLog($finalRegisterResponse);
-
-                        $registerResponse = $this->setUserInfoSession($finalRegisterResponse);
-
-                        return json_encode($registerResponse);
+                        $registerResponse["response"]["user"] = $basicUserInfoArray["response"];
+                        $registerResponse["response"]["user"]["user_token"] = $userToken;
+                        $finalRegisterResponse = $this->setUserInfoSession($registerResponse);
+                    } else {
+                        $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+                        $finalRegisterResponse['error_code'] = 'invalid_user_token_status';
+                        $finalRegisterResponse['error_message'] = '';
+                    }
                     break;
 
                 case '400':
@@ -263,20 +245,18 @@ class UserObjectFactory
                     $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                     $finalRegisterResponse['error_code'] = 'display_message';
                     $finalRegisterResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
-                    return json_encode($finalRegisterResponse);
                     break;
                 case '403':
                     $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
-                    $errorArray = array(
+                    $finalRegisterResponse = array(
                         'meta_code' => $retrieveUserToken['meta']['code'],
                         'response' => array(
                             'message' => $errorMsg,
                         ),
                     );
-                    $this->logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $errorArray;
-                    $this->logFactory->writeInfoLog($errorArray);
+                    $this->logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $finalRegisterResponse;
+                    $this->logFactory->writeInfoLog($finalRegisterResponse);
 
-                    return json_encode($errorArray);
                     break;
 
                 case '404':
@@ -284,20 +264,20 @@ class UserObjectFactory
 
                 default:
                     $errorMsg = $this->config->get('Enums.Status.MESSAGE');
-                    $errorArray = array(
+                    $finalRegisterResponse = array(
                         'meta_code' => 500,
                         'response' => array(
                             'message' => $errorMsg,
                         ),
                     );
-                    $this->logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $errorArray;
-                    $this->logFactory->writeErrorLog($errorArray);
-                    return $errorArray;
+                    $this->logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $finalRegisterResponse;
+                    $this->logFactory->writeErrorLog($finalRegisterResponse);
                     break;
             }
         }else{
             $this->logFactory->writeErrorLog("Register Failure");
         }
+        return json_encode($finalRegisterResponse);
     }
 
     /**

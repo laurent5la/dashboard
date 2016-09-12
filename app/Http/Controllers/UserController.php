@@ -23,9 +23,71 @@ class UserController extends Controller {
         return $this->userMapper;
     }
 
-    public function index()
+    /**
+     * Backend action to change the login a user.
+     * @return array
+     * @since 16.12
+     * @author aprakash
+     */
+    public function login()
     {
-        return view('login');
+        $logFactory = new LogFactory();
+        $params = Request::all();
+        $secureParams = $this->cleanParams($params);
+
+        if(!is_array($params)) {
+            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
+        } else {
+            $this->timingStart(__METHOD__);
+            $userMapper = new UserMapper();
+            $userObject = $userMapper->authenticateUser($secureParams);
+            $this->timingEnd($logFactory);
+            return $userObject;
+        }
+
+        return [];
+    }
+
+    /**
+     * Backend action to change the register a user.
+     * @return array
+     * @since 16.12
+     * @author aprakash
+     */
+    public function register()
+    {
+        $logFactory = new LogFactory();
+        $params = Request::all();
+        $secureParams = $this->cleanParams($params);
+
+        if(!is_array($params))
+        {
+            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
+        }
+        else
+        {
+            $this->timingStart(__METHOD__);
+            $userMapper = new UserMapper();
+            $userObject = $userMapper->setUser($secureParams);
+            $this->timingEnd($logFactory);
+            return $userObject;
+        }
+
+        return [];
+    }
+
+
+    public function logout()
+    {
+        $logFactory = new LogFactory();
+        $this->logTime['UserController'] = "logout";
+        $this->logTime['start_time'] = time();
+        $userMapper = new UserMapper();
+        $userObject = $userMapper->logoutUser();
+        $this->logTime['end_time'] = time();
+        $this->logTime['elapsedTime'] = $this->logTime['end_time'] - $this->logTime['start_time'];
+        $logFactory->writeTimingLog($this->logTime);
+        return $userObject;
     }
 
     /**
@@ -97,73 +159,6 @@ class UserController extends Controller {
         }
 
         return [];
-    }
-
-    /**
-     * Backend action to change the login a user.
-     * @return array
-     * @since 16.12
-     * @author aprakash
-     */
-    public function login()
-    {
-        $logFactory = new LogFactory();
-        $params = Request::all();
-        $secureParams = $this->cleanParams($params);
-
-        if(!is_array($params)) {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
-        } else {
-            $this->timingStart(__METHOD__);
-            $userMapper = new UserMapper();
-            $userObject = $userMapper->authenticateUser($secureParams);
-            $this->timingEnd($logFactory);
-            return $userObject;
-        }
-
-        return [];
-    }
-
-    /**
-     * Backend action to change the register a user.
-     * @return array
-     * @since 16.12
-     * @author aprakash
-     */
-    public function register()
-    {
-        $logFactory = new LogFactory();
-        $params = Request::json();
-        $secureParams = $this->cleanParams($params);
-
-        if(!is_array($params))
-        {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
-        }
-        else
-        {
-            $this->timingStart(__METHOD__);
-            $userMapper = new UserMapper();
-            $userObject = $userMapper->setUser($secureParams);
-            $this->timingEnd($logFactory);
-            return $userObject;
-        }
-
-        return [];
-    }
-
-
-    public function logout()
-    {
-        $logFactory = new LogFactory();
-        $this->logTime['UserController'] = "logout";
-        $this->logTime['start_time'] = time();
-        $userMapper = new UserMapper();
-        $userObject = $userMapper->logoutUser();
-        $this->logTime['end_time'] = time();
-        $this->logTime['elapsedTime'] = $this->logTime['end_time'] - $this->logTime['start_time'];
-        $logFactory->writeTimingLog($this->logTime);
-        return $userObject;
     }
 
     /**

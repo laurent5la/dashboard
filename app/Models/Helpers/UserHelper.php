@@ -68,7 +68,7 @@ class UserHelper
             $this->logMessage['UserHelper->areValidRegisterParams']['First_Name'] = 'Invalid First Name in the Request';
         if(!isset($params['last-name']) || is_null($params['last-name']))
             $this->logMessage['UserHelper->areValidRegisterParams']['Last_Name'] = 'Invalid Last Name in the Request';
-        if(!isset($params['password1']) || is_null($params['password1']) || (strlen($params['password1']) < 6 || !preg_match("#[0-9]+#", $params['password1']) || !preg_match("#[a-z]+#", $params['password1'])))
+        if(!isset($params['password']) || is_null($params['password']) || (strlen($params['password']) < 6 || !preg_match("#[0-9]+#", $params['password']) || !preg_match("#[a-z]+#", $params['password'])))
             $this->logMessage['UserHelper->areValidRegisterParams']['Password'] = 'Invalid Password in the Request';
         return $this->logMessage;
     }

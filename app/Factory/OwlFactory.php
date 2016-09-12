@@ -106,28 +106,28 @@ class OwlFactory extends OwlClient
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 3 - User is registering with email - ".$params['email']);
         $userRegistrationURL = $this->config->get('owl_endpoints.user_register');
         $userRegistrationValidation = $userHelper->areValidRegisterParams($params);
+        $registrationPostRequest = [];
         if(!empty($userRegistrationValidation)) {
             $this->logFactory->writeErrorLog($userRegistrationValidation);
         } else {
             if($this->isValidEndpoint($userRegistrationURL)) {
                 $userRegisterParams = [
                     'email' => $params['email'],
-                    'first_name' => $params['personal-first-name'],
-                    'last_name' => $params['personal-last-name'],
-                    'password' => $params['password1'],
+                    'first_name' => $params['first-name'],
+                    'last_name' => $params['last-name'],
+                    'password' => $params['password'],
                     'source' => 'WAC',
                 ];
 
                 $owlInstance = OwlClient::getInstance();
                 $registrationPostRequest = $owlInstance->owlPostRequest($userRegistrationURL, $userRegisterParams);
                 Session::set('user_activity', $this->userActivities);
-                return $registrationPostRequest;
             } else {
                 $logMessage['OwlFactory->userRegister']['Registration_Endpoint'] = 'Invalid Registration Endpoint';
                 $this->logFactory->writeErrorLog($logMessage);
-                return null;
             }
         }
+        return $registrationPostRequest;
     }
 
     public function userPersonalUpdate($params, $userToken)
