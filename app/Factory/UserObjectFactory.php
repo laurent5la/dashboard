@@ -93,13 +93,13 @@ class UserObjectFactory
 //                    else
 //                    {
                     $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
-                    $errorArray = array(
+                    $finalLoginResponse = array(
                         'meta_code' => $retrieveUserToken['meta']['code'],
                         'response' => array(
                             'message' => $errorMsg,
                         ),
                     );
-                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $errorArray;
+                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $finalLoginResponse;
                     $this->logFactory->writeInfoLog($errorArray);
 
 //                    }
@@ -114,13 +114,13 @@ class UserObjectFactory
 
                 default:
                     $errorMsg = $this->config->get('Enums.Status.MESSAGE');
-                    $errorArray = array(
+                    $finalLoginResponse = array(
                         'meta_code' => 500,
                         'response' => array(
                             'message' => $errorMsg,
                         ),
                     );
-                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $errorArray;
+                    $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $finalLoginResponse;
                     $this->logFactory->writeErrorLog($errorArray);
                     return $errorArray;
                     break;
@@ -551,67 +551,6 @@ class UserObjectFactory
         }
 
         return $finalChangePasswordResponse;
-    }
-
-    private function prepareTaxRequestResponse($userPersonalInfoObject)
-    {
-        $cartDetails = $this->shoppingCart->getCartFeaturesForDisplay("UserObjectFactory->prepareTaxRequestResponse", $this->crossCookie);
-        $totalCartAmount = $cartDetails['totalD'].".".$cartDetails['totalC'];
-        $avalaraTaxParams = $this->formAvalaraTaxRequest($userPersonalInfoObject, $totalCartAmount);
-        $calculatedTax = $this->avalaraFactory->getTaxInfo($avalaraTaxParams);
-        return $calculatedTax;
-    }
-
-    private function formAvalaraTaxRequest($userPersonalInfoObject, $totalCartAmount)
-    {
-        $avalaraParams = Array
-        (
-            "DocType"      => "SalesOrder",
-            "CompanyCode"  => "DANDB",
-            "Client"       => "PHONE",
-            "DocDate"      => date("Y-m-d"),
-            "CustomerCode" => $userPersonalInfoObject['user_identifier'],
-            "Addresses" => Array
-            (
-                Array
-                (
-                    "Line1"         => $userPersonalInfoObject['personal_address']['address_line_1'],
-                    "Line2"         => $userPersonalInfoObject['personal_address']['address_line_2'],
-                    "City"          => $userPersonalInfoObject['personal_address']['city_name'],
-                    "Region"        => $userPersonalInfoObject['personal_address']['state_code'],
-                    "PostalCode"    => $userPersonalInfoObject['personal_address']['zip_code'],
-                    "Country"       => $userPersonalInfoObject['personal_address']['country_code'],
-                    "AddressCode"   => 1
-                )
-            ),
-            "Lines" => Array
-            (
-                Array
-                (
-                    "LineNo"          => 1,
-                    "DestinationCode" => 1,
-                    "OriginCode"      => 1,
-                    "Amount"          => $totalCartAmount
-                )
-            )
-        );
-        return json_encode($avalaraParams);
-    }
-
-    private function updateCartContentsWithTax($calculatedtaxResponse)
-    {
-        $updatedCart = $this->shoppingCart->updateCartWithTaxInfo($calculatedtaxResponse['response'], $this->crossCookie);
-        $updatedCartResponse = Array(
-            'subTotalD'  => isset($updatedCart['subTotalD']) ? $updatedCart['subTotalD'] : '',
-            'subTotalC'  => isset($updatedCart['subTotalC']) ? $updatedCart['subTotalC'] : '',
-            'totalD'     => isset($updatedCart['totalD']) ? $updatedCart['totalD'] : '',
-            'totalC'     => isset($updatedCart['totalC']) ? $updatedCart['totalC'] : '',
-            'taxD'       => isset($updatedCart['taxD']) ? $updatedCart['taxD'] : '',
-            'taxC'       => isset($updatedCart['taxC']) ? $updatedCart['taxC'] : '',
-            'promoC'     => isset($updatedCart['promoC']) ? $updatedCart['promoC'] : '',
-            'promoD'     => isset($updatedCart['promoD']) ? $updatedCart['promoD'] : ''
-        );
-        return $updatedCartResponse;
     }
 
     private function formatUserObjectResponse($userInfoObject)
