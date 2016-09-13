@@ -80,13 +80,10 @@ class UserController extends Controller {
     public function logout()
     {
         $logFactory = new LogFactory();
-        $this->logTime['UserController'] = "logout";
-        $this->logTime['start_time'] = time();
+        $this->timingStart(__METHOD__);
         $userMapper = new UserMapper();
         $userObject = $userMapper->logoutUser();
-        $this->logTime['end_time'] = time();
-        $this->logTime['elapsedTime'] = $this->logTime['end_time'] - $this->logTime['start_time'];
-        $logFactory->writeTimingLog($this->logTime);
+        $this->timingEnd($logFactory);
         return $userObject;
     }
 
