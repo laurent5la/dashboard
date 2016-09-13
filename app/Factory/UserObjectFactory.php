@@ -100,11 +100,10 @@ class UserObjectFactory
                         ),
                     );
                     $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $finalLoginResponse;
-                    $this->logFactory->writeInfoLog($errorArray);
+                    $this->logFactory->writeInfoLog($finalLoginResponse);
 
 //                    }
 
-                    return json_encode($errorArray);
                     break;
 
                 case '404':
@@ -121,8 +120,7 @@ class UserObjectFactory
                         ),
                     );
                     $this->logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $finalLoginResponse;
-                    $this->logFactory->writeErrorLog($errorArray);
-                    return $errorArray;
+                    $this->logFactory->writeErrorLog($finalLoginResponse);
                     break;
             }
         }else{
