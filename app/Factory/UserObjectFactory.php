@@ -7,8 +7,8 @@ use App\Lib\Dashboard\Helper\CrossCookie;
 use App\Models\User;
 use Illuminate\Support\Facades\Session;
 use App\Models\Helpers\UserHelper;
-use App\Factory\LogFactory;
-use App\Factory\OwlFactory;
+use JWTFactory;
+use JWTAuth;
 
 class UserObjectFactory
 {
@@ -53,6 +53,8 @@ class UserObjectFactory
                         $loginResponse["response"]["user"] = $basicUserInfoArray["response"];
                         $loginResponse["response"]["user"]["user_token"] = $userToken;
                         $finalLoginResponse = $this->setUserInfoSession($loginResponse);
+                        $finalLoginResponse['user']['token'] = $this->createJwtToken($finalLoginResponse);
+
                     } else {
                         $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                         $finalLoginResponse['error_code'] = 'invalid_user_token_status';
@@ -699,5 +701,16 @@ class UserObjectFactory
         $userInfoResponse['response']['user'] = isset($userInfo['response']['user']) ? $userInfo['response']['user'] : [];
 
         return $userInfoResponse;
+    }
+
+    /**
+     * @param $finalLoginResponse
+     */
+    private function createJwtToken($finalLoginResponse)
+    {
+        $payload = JWTFactory::make(['email' => $finalLoginResponse['user']['email']]);
+        $token = JWTAuth::encode($payload);
+        Session::set('jwt', $token);
+        return $token;
     }
 }
