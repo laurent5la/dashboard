@@ -8,7 +8,8 @@
     "laravel/framework": "5.0.*",
     "guzzlehttp/guzzle": "5.3.0",
     "monolog/monolog": "^1.19",
-    "tymon/jwt-auth": "0.5.9"
+    "tymon/jwt-auth": "0.5.9",
+    "predis/predis": "~1.0"
 
   },
   "require-dev": {

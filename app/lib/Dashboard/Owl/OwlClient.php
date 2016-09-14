@@ -147,7 +147,6 @@ class OwlClient
             $logFactory->writeErrorLog("Error in OwlClient.php - OwlGetRequest - ".$e->getMessage());
             $response = [];
         }
-        //why return response in exception case?
         return $response;
     }
 
