@@ -43,17 +43,20 @@ class UserObjectFactory
                 case '200':
                     $userToken = $retrieveUserToken['response']['user_token'];
                     $basicUserInfoArray = $this->owlFactory->isUserTokenValid($userToken);
+
                     
-                    if(!is_null($basicUserInfoArray) && $basicUserInfoArray["response"]["status"] == "valid") {
-                        $loginResponse = [];
-                        $loginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
-                        $loginResponse['error_code'] = '';
-                        $loginResponse['error_message'] = '';
+                    if((!is_null($basicUserInfoArray))
+                        && (isset($basicUserInfoArray["meta"]))
+                        && (isset($basicUserInfoArray["meta"]["code"]))
+                        && ($basicUserInfoArray["meta"]["code"] == 200)) {
+                        //appending user token to response retrieved from OWL
+                        $basicUserInfoArray["response"]["user_token"] = $userToken;
+
                         $this->logFactory->writeInfoLog("Login Success");
-                        $loginResponse["response"]["user"] = $basicUserInfoArray["response"];
-                        $loginResponse["response"]["user"]["user_token"] = $userToken;
-                        $finalLoginResponse = $this->setUserInfoSession($loginResponse);
-                        $finalLoginResponse['user']['token'] = $this->createJwtToken($finalLoginResponse);
+                        $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
+                        $finalLoginResponse['error_code'] = '';
+                        $finalLoginResponse['error_message'] = '';
+                        $finalLoginResponse['response']['token'] = $this->createJwtToken($basicUserInfoArray["response"])->__toString();
 
                     } else {
                         $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
@@ -94,7 +97,7 @@ class UserObjectFactory
 //                    {
                     $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
                     $finalLoginResponse = array(
-                        'meta_code' => $retrieveUserToken['meta']['code'],
+                        'error_code' => $retrieveUserToken['meta']['code'],
                         'response' => array(
                             'message' => $errorMsg,
                         ),
@@ -114,7 +117,7 @@ class UserObjectFactory
                 default:
                     $errorMsg = $this->config->get('Enums.Status.MESSAGE');
                     $finalLoginResponse = array(
-                        'meta_code' => 500,
+                        'error_code' => 500,
                         'response' => array(
                             'message' => $errorMsg,
                         ),
@@ -220,15 +223,21 @@ class UserObjectFactory
                     $userToken = $retrieveUserToken['response']['user_token'];
                     $basicUserInfoArray = $this->owlFactory->isUserTokenValid($userToken);
 
-                    if(!is_null($basicUserInfoArray) && $basicUserInfoArray["response"]["status"] == "valid") {
-                        $registerResponse = [];
-                        $registerResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
-                        $registerResponse['error_code'] = '';
-                        $registerResponse['error_message'] = '';
+                    if((!is_null($basicUserInfoArray))
+                        && (isset($basicUserInfoArray["meta"]))
+                        && (isset($basicUserInfoArray["meta"]["code"]))
+                        && ($basicUserInfoArray["meta"]["code"] == 200)) {
+
+                        //appending user token to response retrieved from OWL
+                        $basicUserInfoArray["response"]["user_token"] = $userToken;
+
                         $this->logFactory->writeInfoLog("Register Success");
-                        $registerResponse["response"]["user"] = $basicUserInfoArray["response"];
-                        $registerResponse["response"]["user"]["user_token"] = $userToken;
-                        $finalRegisterResponse = $this->setUserInfoSession($registerResponse);
+                        $finalRegisterResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
+                        $finalRegisterResponse['error_code'] = '';
+                        $finalRegisterResponse['error_message'] = '';
+                        $finalRegisterResponse['response']['token'] = $this->createJwtToken($basicUserInfoArray["response"])->__toString();
+
+
                     } else {
                         $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                         $finalRegisterResponse['error_code'] = 'invalid_user_token_status';
@@ -249,7 +258,7 @@ class UserObjectFactory
                 case '403':
                     $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
                     $finalRegisterResponse = array(
-                        'meta_code' => $retrieveUserToken['meta']['code'],
+                        'error_code' => $retrieveUserToken['meta']['code'],
                         'response' => array(
                             'message' => $errorMsg,
                         ),
@@ -265,7 +274,7 @@ class UserObjectFactory
                 default:
                     $errorMsg = $this->config->get('Enums.Status.MESSAGE');
                     $finalRegisterResponse = array(
-                        'meta_code' => 500,
+                        'error_code' => 500,
                         'response' => array(
                             'message' => $errorMsg,
                         ),
@@ -645,9 +654,8 @@ class UserObjectFactory
      */
     private function createJwtToken($finalLoginResponse)
     {
-        $payload = JWTFactory::make(['email' => $finalLoginResponse['user']['email']]);
+        $payload = JWTFactory::make(['email' => $finalLoginResponse['user_email_identifier'], 'first_name' => $finalLoginResponse["first_name"], 'last_name' => $finalLoginResponse['last_name'], 'user_token' => $finalLoginResponse['user_token']]);
         $token = JWTAuth::encode($payload);
-        Session::set('jwt', $token);
         return $token;
     }
 }
