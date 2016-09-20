@@ -12,7 +12,7 @@ return array(
     'signature'             => '/v1/cart/user/cybersource_signature',
     'user_logout'           => '/v1/user/logout',
     'user_register'         => '/v1/user/register',
-    'user_detail'          => '/v1/user/',
+    'user_detail'          => '/v2/user/',
     'user_password_reset'   => '/v1.1/user/password/reset/',
     'user_password_change'  => '/v1/user/password/change/',
     'user_billing_info'     => '/v1/cart/user/billing_info/',

@@ -189,70 +189,6 @@ class OwlFactory extends OwlClient
         return $response;
     }
 
-    /**
-     * This function will return both Personal and Billing info of the user.
-     * @param  string $userToken
-     * @return Array userInfo including Personal and Billing Info.
-     */
-    public function getUserTokenStatus($userToken = null)
-    {
-        $userToken = ($userToken) ? $userToken : $this->userToken;
-
-        $userDetailURL = $this->config->get('owl_endpoints.valid_user_token');
-
-        if ($this->isUserTokenValid($userToken)) {
-            $params = [
-                'query' => [
-                    'user_token' => $userToken
-                ]
-            ];
-
-            if ($this->isValidEndpoint($userDetailURL)) {
-                $owlInstance = OwlClient::getInstance();
-                $userDetailResponse = $owlInstance->owlGetRequest($userDetailURL, $params, $userToken);
-
-                $userResponse = [];
-
-                switch ($userDetailResponse['meta']['code']) {
-                    case '200':
-
-                        if (!empty($userDetailResponse['response']['user']['_userIdentifier'])) {
-                            $userResponse['user']['user_detail'] = $userDetailResponse['response']['user'];
-                        } else {
-                            return array('error' => 'MISSING_ID');
-                        }
-                        break;
-                    case '400':
-                    case '401':
-                    case '402':
-                    case '403':
-                        $activityLog = Array();
-                        $activityLog["activity_log"] = Session::get('user_activity');
-                        $this->logFactory->writeActivityLog($activityLog);
-                        if (isset($userDetailResponse['error'][0])) {
-                            //try one more time
-                            $userDetailResponse = $owlInstance->owlGetRequest($userDetailURL, $params, $userToken);
-                            if($userDetailResponse['meta']['code'] != '200') {
-                                $userResponse['user']['user_detail'] = '';
-                            } else {
-                                $userResponse['user']['user_detail'] = $userDetailResponse['response']['user'];
-                            }
-                        }
-                        break;
-                    default:
-                        $userResponse['user']['user_detail'] = '';
-                        break;
-                }
-                return $userResponse;
-
-            } else {
-                $logMessage['OwlFactory->getUserInfo']['User_Information'] = 'Invalid User Information Endpoint';
-                $this->logFactory->writeErrorLog($logMessage);
-                return null;
-            }
-        }
-        return null;
-    }
 
     /**
      * Sends the reset password email through OWL services.
@@ -324,5 +260,27 @@ class OwlFactory extends OwlClient
             $this->logFactory->writeErrorLog($logMessage);
         }
         return $changePasswordResponse;
+    }
+
+
+    public function getUserDetail($userToken)
+    {
+        $userDetailUrl = $this->config->get('owl_endpoints.user_detail');
+        $userDetailResponse = [];
+        if(parent::isValidEndpoint($userDetailUrl)) {
+            $params = [
+                'query' => [
+                    'user_token' => $userToken
+                ]
+            ];
+
+            $owlInstance = OwlClient::getInstance();
+            $userDetailResponse = $owlInstance->owlGetRequest($userDetailUrl, $params);
+        } else {
+            $logMessage['OwlFactory->getUserDetail']['Valid_Token'] = 'Invalid User Token Endpoint';
+            $this->logFactory->writeErrorLog($logMessage);
+        }
+
+        return $userDetailResponse;
     }
 }

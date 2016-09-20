@@ -1,13 +1,14 @@
 <?php
 namespace App\Factory;
 
-use Tymon\JWTAuth\Facades\JWTAuth;
+use JWTAuth;
+use JWTFactory;
 
-class JwtFactory
+class JwtLoginDashboardFactory
 {
     private static function createPayloadFromUserInfo($userInfo)
     {
-        return JWTAuth::make($userInfo);
+        return JWTFactory::make([ 'user_token' => $userInfo['user_token']]);
     }
 
     public static function createToken($userInfo)
