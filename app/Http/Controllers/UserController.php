@@ -31,17 +31,16 @@ class UserController extends Controller {
      */
     public function login()
     {
-        $logFactory = new LogFactory();
         $params = Request::all();
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params)) {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
+            $this->logError(__METHOD__, 'Input parameters are not properly structured');
         } else {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
             $userObject = $userMapper->authenticateUser($secureParams);
-            $this->timingEnd($logFactory);
+            $this->timingEnd();
             return $userObject;
         }
 
@@ -56,20 +55,19 @@ class UserController extends Controller {
      */
     public function register()
     {
-        $logFactory = new LogFactory();
         $params = Request::all();
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params))
         {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
+            $this->logError(__METHOD__, 'Input parameters are not properly structured');
         }
         else
         {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
             $userObject = $userMapper->setUser($secureParams);
-            $this->timingEnd($logFactory);
+            $this->timingEnd();
             return $userObject;
         }
 
@@ -79,11 +77,10 @@ class UserController extends Controller {
 
     public function logout()
     {
-        $logFactory = new LogFactory();
         $this->timingStart(__METHOD__);
         $userMapper = new UserMapper();
         $userObject = $userMapper->logoutUser();
-        $this->timingEnd($logFactory);
+        $this->timingEnd();
         return $userObject;
     }
 
@@ -96,22 +93,21 @@ class UserController extends Controller {
      */
     public function resetPassword()
     {
-        $logFactory = new LogFactory();
         $params = Request::json()->all();
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params)) {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
+            $this->logError(__METHOD__, 'Input parameters are not properly structured');
         } else {
             if(isset($params['email']) && strlen($params['email'])!=0) {
                 $this->setParamsForResetPassword($params);
                 $this->timingStart(__METHOD__);
                 $userMapper = $this->getUserMapper();
                 $userObject = $userMapper->forgotPassword($secureParams);
-                $this->timingEnd($logFactory);
+                $this->timingEnd();
                 return $userObject;
             } else {
-                $this->logError(__METHOD__, 'Email key does not exist for Forgot Password.', $logFactory);
+                $this->logError(__METHOD__, 'Email key does not exist for Forgot Password.');
             }
         }
         return [];
@@ -138,20 +134,19 @@ class UserController extends Controller {
      */
     public function newPassword()
     {
-        $logFactory = new LogFactory();
         $params = Request::json()->all();
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params))
         {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured', $logFactory);
+            $this->logError(__METHOD__, 'Input parameters are not properly structured');
         }
         else
         {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
             $userObject = $userMapper->changePassword($secureParams);
-            $this->timingEnd($logFactory);
+            $this->timingEnd();
             return $userObject;
         }
 
@@ -170,7 +165,7 @@ class UserController extends Controller {
         $secureParams = array_map("trim", $paramsWithNoTags);
 
         if($params !== $secureParams)
-            $this->logWarning(__METHOD__ , "The input parameters did not match the clean parameters", $logFactory);
+            $this->logWarning(__METHOD__ , "The input parameters did not match the clean parameters");
 
         return $secureParams;
     }

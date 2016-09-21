@@ -1,13 +1,13 @@
 <?php namespace App\Http\Controllers;
 
+use App\Traits\Logging;
 use Illuminate\Foundation\Bus\DispatchesCommands;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Foundation\Validation\ValidatesRequests;
-use App\Factory\LogFactory;
 
 abstract class Controller extends BaseController {
 
-	use DispatchesCommands, ValidatesRequests;
+	use DispatchesCommands, ValidatesRequests, Logging;
 
     protected $logTime = array();
 
@@ -15,14 +15,13 @@ abstract class Controller extends BaseController {
      * Called to log an error.
      * @param String $method
      * @param String $errorMessage
-     * @param LogFactory $logFactory
      * @since 16.13
      * @author mvalenzuela
      */
-    protected function logError($method, $errorMessage,  LogFactory &$logFactory)
+    protected function logError($method, $errorMessage)
     {
         $logMessage[__CLASS__ . '->' . $method] = $errorMessage;
-        $logFactory->writeErrorLog($logMessage);
+        $this->error($logMessage);
     }
 
     /**
@@ -37,27 +36,24 @@ abstract class Controller extends BaseController {
 
     /**
      * called to calculate elapsed time and write to timing log
-     * @param LogFactory $logFactory
      */
-    protected function timingEnd(LogFactory &$logFactory)
+    protected function timingEnd()
     {
         $this->logTime['end_time'] = time();
         $this->logTime['elapsed_time'] = $this->logTime['end_time'] - $this->logTime['start_time'];
-        $logFactory->writeTimingLog($this->logTime);
+        $this->timing($this->logTime);
     }
 
     /**
      * Called to log an error.
      * @param String $method
      * @param String $warningMessage
-     * @param LogFactory $logFactory
      * @since 16.13
      * @author aprakash
      */
-    protected function logWarning($method, $warningMessage,  LogFactory &$logFactory)
+    protected function logWarning($method, $warningMessage)
     {
         $logMessage[__CLASS__ . '->' . $method] = $warningMessage;
-        $logFactory->writeWarningLog($logMessage);
+        $this->warning($logMessage);
     }
-
 }
