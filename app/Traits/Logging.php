@@ -45,6 +45,12 @@ trait Logging
         $logFactory->writeIPLog($message);
     }
 
+    protected function activity($message)
+    {
+        $logFactory = $this->getLogFactoryInstance();
+        $logFactory->writeActivityLog($message);
+    }
+
     protected function timing($message)
     {
         $logFactory = $this->getLogFactoryInstance();

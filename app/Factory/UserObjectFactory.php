@@ -5,6 +5,7 @@ namespace App\Factory;
 
 use App\Lib\Dashboard\Helper\CrossCookie;
 use App\Models\User;
+use App\Traits\Logging;
 use Illuminate\Support\Facades\Session;
 use App\Models\Helpers\UserHelper;
 use JWTFactory;
@@ -12,8 +13,9 @@ use JWTAuth;
 
 class UserObjectFactory
 {
+    use Logging;
+
     private $owlFactory;
-    private $avalaraFactory;
     private $crossCookie;
     private $userModel;
     private $logMessage = array();
@@ -29,7 +31,6 @@ class UserObjectFactory
         }
         $this->userModel = new User();
         $this->config = app()['config'];
-        $this->logFactory = new LogFactory();
     }
 
 
@@ -59,7 +60,7 @@ class UserObjectFactory
                             $finalLogoutResponse['error_message'] = '';
                         } else {
                             $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = isset($logoutOwlResponse['error'][0]) ? $logoutOwlResponse['error'][0] : "OWL returned ".$logoutOwlResponse['meta']['code'];
-                            $this->logFactory->writeErrorLog($this->logMessage);
+                            $this->error($this->logMessage);
                         }
                         break;
                     }
@@ -67,7 +68,7 @@ class UserObjectFactory
                     {
                         $activityLog = Array();
                         $activityLog["activity_log"] = Session::get('user_activity');
-                        $this->logFactory->writeActivityLog($activityLog);
+                        $this->activity($activityLog);
                         break;
                     }
 
@@ -75,25 +76,25 @@ class UserObjectFactory
                     {
                         $this->logMessage['UserObjectFactory->logoutUser']['meta'] = $logoutOwlResponse['meta']['code'];
                         $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = "Invalid User Token";
-                        $this->logFactory->writeErrorLog($this->logMessage);
+                        $this->error($this->logMessage);
                         break;
                     }
                     default:
                     {
                         $this->logMessage['UserObjectFactory->logoutUser']['meta'] = $logoutOwlResponse['meta']['code'];
                         $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = isset($logoutOwlResponse['error'][0]) ? $logoutOwlResponse['error'][0] : "OWL returned ".$logoutOwlResponse['meta']['code'];
-                        $this->logFactory->writeErrorLog($this->logMessage);
+                        $this->error($this->logMessage);
                         break;
                     }
                 }
             } else {
                 $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = "Meta code missing from the logout response.";
-                $this->logFactory->writeErrorLog($this->logMessage);
+                $this->error($this->logMessage);
             }
 
         } else {
             $this->logMessage['UserObjectFactory->logoutUser']['Errors'] = "User Token not found in session. User might already have logged out";
-            $this->logFactory->writeInfoLog($this->logMessage);
+            $this->info($this->logMessage);
         }
         $userHelper->unsetUserSession();
 
@@ -160,7 +161,7 @@ class UserObjectFactory
                         $finalUpdatedUserResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                         $finalUpdatedUserResponse['error_code'] = '';
                         $finalUpdatedUserResponse['error_message'] = '';
-                        $this->logFactory->writeInfoLog("Personal Update Success");
+                        $this->info("Personal Update Success");
                     }
                     $finalUpdatedUserResponse['response']['user']['Personal_Information'] = $userPersonalInfoObject;
                     $finalUpdatedUserResponse['response']['user']['Personal_Information']['response']['user_token'] = $userToken;
@@ -181,10 +182,10 @@ class UserObjectFactory
 
                     $finalUpdatedUserResponse['response']['cart'] = $updatedCartResponse;
                     if($this->logMessage != '')
-                        $this->logFactory->writeErrorLog($this->logMessage);
+                        $this->error($this->logMessage);
 
                     $this->logMessage['UserObjectFactory->updateUserPersonalInfo']['Response'] = $finalUpdatedUserResponse;
-                    $this->logFactory->writeInfoLog($finalUpdatedUserResponse);
+                    $this->info($finalUpdatedUserResponse);
 
                     $updateResponse = $this->setUserInfoSession($finalUpdatedUserResponse);
 
@@ -197,7 +198,7 @@ class UserObjectFactory
                 case '402':
                     $activityLog = Array();
                     $activityLog["activity_log"] = Session::get('user_activity');
-                    $this->logFactory->writeActivityLog($activityLog);
+                    $this->activity($activityLog);
                     $finalUpdatedUserResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                     $finalUpdatedUserResponse['error_code'] = 'display_message';
                     $finalUpdatedUserResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
@@ -217,7 +218,7 @@ class UserObjectFactory
                         ),
                     );
                     $this->logMessage['UserObjectFactory->updateUserPersonalInfo']['Errors'] = $errorArray;
-                    $this->logFactory->writeErrorLog($errorArray);
+                    $this->error($errorArray);
 
                     $finalUpdatedUserResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                     $finalUpdatedUserResponse['error_code'] = 'display_message';
@@ -237,13 +238,12 @@ class UserObjectFactory
                         ),
                     );
                     $this->logMessage['UserObjectFactory->updateUserPersonalInfo']['Errors'] = $errorArray;
-                    $this->logFactory->writeErrorLog($errorArray);
+                    $this->error($errorArray);
                     return $errorArray;
                     break;
             }
-        }
-        else{
-            $this->logFactory->writeErrorLog("Personal Update Failure");
+        } else {
+            $this->error("Personal Update Failure");
         }
     }
 
@@ -267,37 +267,35 @@ class UserObjectFactory
                             $finalForgotPasswordResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                             $finalForgotPasswordResponse['error_code'] = '';
                             $finalForgotPasswordResponse['error_message'] = '';
-                            $this->logFactory->writeInfoLog("Reset Password Sent Successfully");
+                            $this->info("Reset Password Sent Successfully");
                         } else {
                             $finalForgotPasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                             $finalForgotPasswordResponse['error_code'] = '';
                             $finalForgotPasswordResponse['error_message'] = '';
-                            $this->logFactory->writeInfoLog("Reset Password Failed");
+                            $this->info("Reset Password Failed");
                         }
                         break;
                     case '400':
                         $activityLog = Array();
                         $activityLog["activity_log"] = Session::get('user_activity');
-                        $this->logFactory->writeActivityLog($activityLog);
+                        $this->activity($activityLog);
                         break;
 
                     case '403':
                         $finalForgotPasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                         $finalForgotPasswordResponse['error_code'] = 'display_message';
                         $finalForgotPasswordResponse['error_message'] = $forgotPasswordResponse["error"][0];
-                        $this->logFactory->writeInfoLog("Reset Password Failed. No meta code key");
+                        $this->info("Reset Password Failed. No meta code key");
                         break;
 
                     default:
                         $finalForgotPasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                         $finalForgotPasswordResponse['error_code'] = '';
                         $finalForgotPasswordResponse['error_message'] = '';
-                        $this->logFactory->writeInfoLog("Reset Password Failed. No meta code key");
+                        $this->info("Reset Password Failed. No meta code key");
                         break;
                 }
-
             }
-
         } else {
             $finalForgotPasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
             if(isset($forgotPasswordErrorArray['email'])) {
@@ -307,7 +305,7 @@ class UserObjectFactory
                 $finalForgotPasswordResponse['error_code'] = '';
                 $finalForgotPasswordResponse['error_message'] = '';
             }
-            $this->logFactory->writeErrorLog($forgotPasswordErrorArray);
+            $this->error($forgotPasswordErrorArray);
         }
 
         return $finalForgotPasswordResponse;
@@ -343,27 +341,27 @@ class UserObjectFactory
                         $finalChangePasswordResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                         $finalChangePasswordResponse['error_code'] = '';
                         $finalChangePasswordResponse['error_message'] = '';
-                        $this->logFactory->writeInfoLog("Change Password Success");
+                        $this->info("Change Password Success");
                     }
                     else
                     {
                         $finalChangePasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                         $finalChangePasswordResponse['error_code'] = '';
                         $finalChangePasswordResponse['error_message'] = '';
-                        $this->logFactory->writeInfoLog("Change Password Failed");
+                        $this->info("Change Password Failed");
                     }
                     break;
                 case '400':
                     $activityLog = Array();
                     $activityLog["activity_log"] = Session::get('user_activity');
-                    $this->logFactory->writeActivityLog($activityLog);
+                    $this->activity($activityLog);
                     break;
 
                 default:
                     $finalChangePasswordResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                     $finalChangePasswordResponse['error_code'] = '';
                     $finalChangePasswordResponse['error_message'] = '';
-                    $this->logFactory->writeInfoLog("Change Password Failed as ". $changePasswordResponse['error'][0]);
+                    $this->info("Change Password Failed as ". $changePasswordResponse['error'][0]);
                     break;
             }
 
@@ -459,15 +457,5 @@ class UserObjectFactory
         $userInfoResponse['response']['user'] = isset($userInfo['response']['user']) ? $userInfo['response']['user'] : [];
 
         return $userInfoResponse;
-    }
-
-    /**
-     * @param $finalLoginResponse
-     */
-    private function createJwtToken($finalLoginResponse)
-    {
-        $payload = JWTFactory::make(['email' => $finalLoginResponse['user_email_identifier'], 'first_name' => $finalLoginResponse["first_name"], 'last_name' => $finalLoginResponse['last_name'], 'user_token' => $finalLoginResponse['user_token']]);
-        $token = JWTAuth::encode($payload);
-        return $token;
     }
 }

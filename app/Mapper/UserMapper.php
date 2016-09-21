@@ -4,11 +4,14 @@ use App\Factory\UserObjectFactory;
 use App\Factory\LogFactory;
 use App\Factory\OwlFactory;
 use App\Factory\JwtLoginDashboardFactory;
+use App\Traits\Logging;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Response;
 
 class UserMapper
 {
+    use Logging;
+
     public function __construct()
     {
         $this->config = app()['config'];
@@ -23,7 +26,6 @@ class UserMapper
 
     public function authenticateUser($params)
     {
-        $logFactory = new LogFactory();
         $owlFactory = new OwlFactory();
         $logMessage = [];
         $retrieveUserToken = $owlFactory->retrieveUserToken($params['email'], $params['password']);
@@ -45,7 +47,7 @@ class UserMapper
                         $basicUserInfoArray["response"]["user_token"] = $userToken;
                         $userDetail = $owlFactory->getUserDetail($userToken);
                         //@TODO format userdetail information with models and objectfactories
-                        $logFactory->writeInfoLog("Login Success");
+                        $this->info("Login Success");
                         $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                         $finalLoginResponse['error_code'] = '';
                         $finalLoginResponse['error_message'] = '';
@@ -64,7 +66,7 @@ class UserMapper
                 case '402':
                     $activityLog = Array();
                     $activityLog["activity_log"] = Session::get('user_activity');
-                    $logFactory->writeActivityLog($activityLog);
+                    $this->activity($activityLog);
                     $finalLoginResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                     $finalLoginResponse['error_code'] = 'display_message';
                     $finalLoginResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
@@ -97,7 +99,7 @@ class UserMapper
                         ),
                     );
                     $logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $finalLoginResponse;
-                    $logFactory->writeInfoLog($finalLoginResponse);
+                    $this->info($finalLoginResponse);
 
 //                    }
 
@@ -105,7 +107,7 @@ class UserMapper
 
                 case '404':
                     $logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = 'Page Not Found';
-                    $logFactory->writeErrorLog($logMessage);
+                    $this->error($logMessage);
                     break;
 
                 default:
@@ -117,11 +119,11 @@ class UserMapper
                         ),
                     );
                     $logMessage['UserObjectFactory->retrieveUserInfo']['Errors'] = $finalLoginResponse;
-                    $logFactory->writeErrorLog($finalLoginResponse);
+                    $this->error($finalLoginResponse);
                     break;
             }
         }else{
-            $logFactory->writeErrorLog("Login Failure");
+            $this->error("Login Failure");
         }
         return response($finalLoginResponse)->header('jwt', $jwt);
     }
@@ -141,7 +143,6 @@ class UserMapper
      */
     public function setUser($params)
     {
-        $logFactory = new LogFactory();
         $owlFactory = new OwlFactory();
         $logMessage = [];
         $retrieveUserToken = $owlFactory->userRegister($params);
@@ -164,7 +165,7 @@ class UserMapper
                         $userDetail = $owlFactory->getUserDetail($userToken);
                         //@TODO format userdetail information with models and objectfactories
 
-                        $logFactory->writeInfoLog("Register Success");
+                        $this->info("Register Success");
                         $finalRegisterResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                         $finalRegisterResponse['error_code'] = '';
                         $finalRegisterResponse['error_message'] = '';
@@ -184,7 +185,7 @@ class UserMapper
                 case '402':
                     $activityLog = Array();
                     $activityLog["activity_log"] = Session::get('user_activity');
-                    $logFactory->writeActivityLog($activityLog);
+                    $this->activity($activityLog);
                     $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
                     $finalRegisterResponse['error_code'] = 'display_message';
                     $finalRegisterResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
@@ -198,8 +199,7 @@ class UserMapper
                         ),
                     );
                     $logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $finalRegisterResponse;
-                    $logFactory->writeInfoLog($finalRegisterResponse);
-
+                    $this->info($finalRegisterResponse);
                     break;
 
                 case '404':
@@ -214,11 +214,11 @@ class UserMapper
                         ),
                     );
                     $logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $finalRegisterResponse;
-                    $logFactory->writeErrorLog($finalRegisterResponse);
+                    $this->error($finalRegisterResponse);
                     break;
             }
         }else{
-            $logFactory->writeErrorLog("Register Failure");
+            $this->error("Register Failure");
         }
         return response($finalRegisterResponse)->header('jwt', $jwt);
     }
