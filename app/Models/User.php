@@ -1,15 +1,14 @@
 <?php
 namespace App\Models;
-use App\Mapper\UserObjectFactory;
 use Illuminate\Auth\UserInterface;
 
 class User {
 
     private $user_id;
     private $salutation;
-    private $first_name;
-    private $last_name;
-    private $email;
+    private $user_first_name;
+    private $user_last_name;
+    private $user_email_identifier;
     private $accepted_tos;
     private $phone_number = '';
     private $source;
@@ -25,11 +24,127 @@ class User {
     private $state_name;
     private $country_code;
     private $country_name;
+    private $impersonated;
+    private $user_identifier;
+    private $user_type_code;
+    private $address_identifier;
+    private $job_title;
+    private $contact_phone_number;
+    private $fax_number;
+    private $customer_group_identifier;
+    private $last_login_date;
+    private $last_password_changed_date;
+    private $failed_login_attempt_count;
+    private $user_middle_name;
+    private $is_deleted_indicator;
+    private $account;
+    private $entitlement;
+    private $alert;
 
-    public function _construct()
+    public function _construct(Entitlement $entitlementObj, Alert $alertObj, Account $accountObj)
     {
-
+        $this->entitlement = $entitlementObj;
+        $this->alert = $alertObj;
+        $this->account = $accountObj;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getLastLoginDate()
+    {
+        return $this->last_login_date;
+    }
+
+    /**
+     * @param mixed $last_login_date
+     */
+    public function setLastLoginDate($last_login_date)
+    {
+        $this->last_login_date = $last_login_date;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getLastPasswordChangedDate()
+    {
+        return $this->last_password_changed_date;
+    }
+
+    /**
+     * @param mixed $last_password_changed_date
+     */
+    public function setLastPasswordChangedDate($last_password_changed_date)
+    {
+        $this->last_password_changed_date = $last_password_changed_date;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFailedLoginAttemptCount()
+    {
+        return $this->failed_login_attempt_count;
+    }
+
+    /**
+     * @param mixed $failed_login_attempt_count
+     */
+    public function setFailedLoginAttemptCount($failed_login_attempt_count)
+    {
+        $this->failed_login_attempt_count = $failed_login_attempt_count;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getUserMiddleName()
+    {
+        return $this->user_middle_name;
+    }
+
+    /**
+     * @param mixed $user_middle_name
+     */
+    public function setUserMiddleName($user_middle_name)
+    {
+        $this->user_middle_name = $user_middle_name;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getIsDeletedIndicator()
+    {
+        return $this->is_deleted_indicator;
+    }
+
+    /**
+     * @param mixed $is_deleted_indicator
+     */
+    public function setIsDeletedIndicator($is_deleted_indicator)
+    {
+        $this->is_deleted_indicator = $is_deleted_indicator;
+    }
+
+
+    /**
+     * @return mixed
+     */
+    public function getCustomerGroupIdentifier()
+    {
+        return $this->customer_group_identifier;
+    }
+
+    /**
+     * @param mixed $customer_group_identifier
+     */
+    public function setCustomerGroupIdentifier($customer_group_identifier)
+    {
+        $this->customer_group_identifier = $customer_group_identifier;
+    }
+
     /**
      * @return mixed
      */
@@ -78,40 +193,37 @@ class User {
         $this->user_id = $user_id;
     }
 
-    /**
-     * @return mixed
-     */
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getFirstName()
+    public function getUserFirstName()
     {
-        return $this->first_name;
+        return $this->user_first_name;
     }
 
     /**
-     * @param mixed $first_name
+     * @param string $user_first_name
      */
-    public function setFirstName($first_name)
+    public function setUserFirstName($user_first_name)
     {
-        $this->first_name = $first_name;
+        $this->user_first_name = $user_first_name;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getLastName()
+    public function getUserLastName()
     {
-        return $this->last_name;
+        return $this->user_last_name;
     }
 
     /**
-     * @param mixed $last_name
+     * @param string $user_last_name
      */
-    public function setLastName($last_name)
+    public function setUserLastName($user_last_name)
     {
-        $this->last_name = $last_name;
+        $this->user_last_name = $user_last_name;
     }
 
     /**
@@ -131,19 +243,19 @@ class User {
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getEmail()
+    public function getUserEmailIdentifier()
     {
-        return $this->email;
+        return $this->user_email_identifier;
     }
 
     /**
-     * @param mixed $email
+     * @param string $user_email_identifier
      */
-    public function setEmail($email)
+    public function setUserEmailIdentifier($user_email_identifier)
     {
-        $this->email = $email;
+        $this->user_email_identifier = $user_email_identifier;
     }
 
     /**
@@ -363,4 +475,117 @@ class User {
     {
         $this->full_name = $full_name;
     }
+
+    /**
+     * @return bool
+     */
+    public function getImpersonated()
+    {
+        return $this->phone_number;
+    }
+
+    /**
+     * @param bool $impersonated
+     */
+    public function setImpersonated($impersonated)
+    {
+        $this->impersonated = $impersonated;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUserIdentifier()
+    {
+        return $this->user_identifier;
+    }
+
+    /**
+     * @param string $user_identifier
+     */
+    public function setUserIdentifier($user_identifier)
+    {
+        $this->user_identifier = $user_identifier;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUserTypeCode()
+    {
+        return $this->user_type_code;
+    }
+
+    /**
+     * @param string $user_type_code
+     */
+    public function setUserTypeCode($user_type_code)
+    {
+        $this->user_type_code = $user_type_code;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAddressIdentifier()
+    {
+        return $this->address_identifier;
+    }
+
+    /**
+     * @param string $address_identifier
+     */
+    public function setAddressIdentifier($address_identifier)
+    {
+        $this->address_identifier = $address_identifier;
+    }
+
+    /**
+     * @return string
+     */
+    public function getJobTitle()
+    {
+        return $this->job_title;
+    }
+
+    /**
+     * @param string $job_title
+     */
+    public function setJobTitle($job_title)
+    {
+        $this->job_title = $job_title;
+    }
+
+    /**
+     * @return string
+     */
+    public function getContactPhoneNumber()
+    {
+        return $this->contact_phone_number;
+    }
+
+    /**
+     * @param string $contact_phone_number
+     */
+    public function setContactPhoneNumber($contact_phone_number)
+    {
+        $this->contact_phone_number = $contact_phone_number;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFaxNumber()
+    {
+        return $this->fax_number;
+    }
+
+    /**
+     * @param string $fax_number
+     */
+    public function setFaxNumber($fax_number)
+    {
+        $this->fax_number = $fax_number;
+    }
+
 }

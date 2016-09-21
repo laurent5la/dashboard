@@ -43,13 +43,13 @@ class UserMapper
                         && ($basicUserInfoArray["meta"]["code"] == 200)) {
                         //appending user token to response retrieved from OWL
                         $basicUserInfoArray["response"]["user_token"] = $userToken;
-//                        @TODO call endpoint to get all user detail information and handle data received
-//                        $userDetail = $owlFactory->getUserDetail($userToken);
-
+                        $userDetail = $owlFactory->getUserDetail($userToken);
+                        //@TODO format userdetail information with models and objectfactories
                         $logFactory->writeInfoLog("Login Success");
                         $finalLoginResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
                         $finalLoginResponse['error_code'] = '';
                         $finalLoginResponse['error_message'] = '';
+                        $finalLoginResponse['response'] = $userDetail['response'];
                         $jwt = JwtLoginDashboardFactory::createToken($basicUserInfoArray["response"])->__toString();
 
                     } else {
@@ -126,11 +126,101 @@ class UserMapper
         return response($finalLoginResponse)->header('jwt', $jwt);
     }
 
+    /**
+     * Stores the User Information
+     * @param array $params {
+     *     @var string $email email of the user
+     *     @var string $first_name first name of the user
+     *     @var string $last_name last name of the user
+     *     @var string $password password of the user
+     * }
+     *
+     * @return JSON UserInfoObject $finalRegisterResponse Final User Response Object consisting of first_name, last_name, email, and password
+     * @use App\Factory\OwlFactory::__construct()
+     * @author aprakash
+     */
     public function setUser($params)
     {
-        $userFactory = new UserObjectFactory();
-        $userObject = $userFactory->storeUserInfo($params);
-        return $userObject;
+        $logFactory = new LogFactory();
+        $owlFactory = new OwlFactory();
+        $logMessage = [];
+        $retrieveUserToken = $owlFactory->userRegister($params);
+        $finalRegisterResponse = [];
+        $jwt = "";
+
+        if (isset($retrieveUserToken['meta'])) {
+            switch ($retrieveUserToken['meta']['code']) {
+                case '200':
+                    $userToken = $retrieveUserToken['response']['user_token'];
+                    $basicUserInfoArray = $owlFactory->isUserTokenValid($userToken);
+
+                    if((!is_null($basicUserInfoArray))
+                        && (isset($basicUserInfoArray["meta"]))
+                        && (isset($basicUserInfoArray["meta"]["code"]))
+                        && ($basicUserInfoArray["meta"]["code"] == 200)) {
+
+                        //appending user token to response retrieved from OWL
+                        $basicUserInfoArray["response"]["user_token"] = $userToken;
+                        $userDetail = $owlFactory->getUserDetail($userToken);
+                        //@TODO format userdetail information with models and objectfactories
+
+                        $logFactory->writeInfoLog("Register Success");
+                        $finalRegisterResponse['status'] = $this->config->get('Enums.Status.SUCCESS');
+                        $finalRegisterResponse['error_code'] = '';
+                        $finalRegisterResponse['error_message'] = '';
+                        $finalRegisterResponse['response'] = $userDetail['response'];
+                        $jwt = JwtLoginDashboardFactory::createToken($basicUserInfoArray["response"])->__toString();
+
+
+                    } else {
+                        $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+                        $finalRegisterResponse['error_code'] = 'invalid_user_token_status';
+                        $finalRegisterResponse['error_message'] = '';
+                    }
+                    break;
+
+                case '400':
+                case '401':
+                case '402':
+                    $activityLog = Array();
+                    $activityLog["activity_log"] = Session::get('user_activity');
+                    $logFactory->writeActivityLog($activityLog);
+                    $finalRegisterResponse['status'] = $this->config->get('Enums.Status.FAILURE');
+                    $finalRegisterResponse['error_code'] = 'display_message';
+                    $finalRegisterResponse['error_message'] = $this->config->get('Enums.Status.MESSAGE');
+                    break;
+                case '403':
+                    $errorMsg = is_string($retrieveUserToken['error']) ? $retrieveUserToken['error'] : $retrieveUserToken['error']['0'];
+                    $finalRegisterResponse = array(
+                        'error_code' => $retrieveUserToken['meta']['code'],
+                        'response' => array(
+                            'message' => $errorMsg,
+                        ),
+                    );
+                    $logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $finalRegisterResponse;
+                    $logFactory->writeInfoLog($finalRegisterResponse);
+
+                    break;
+
+                case '404':
+                    break;
+
+                default:
+                    $errorMsg = $this->config->get('Enums.Status.MESSAGE');
+                    $finalRegisterResponse = array(
+                        'error_code' => 500,
+                        'response' => array(
+                            'message' => $errorMsg,
+                        ),
+                    );
+                    $logMessage['UserObjectFactory->storeUserInfo']['Errors'] = $finalRegisterResponse;
+                    $logFactory->writeErrorLog($finalRegisterResponse);
+                    break;
+            }
+        }else{
+            $logFactory->writeErrorLog("Register Failure");
+        }
+        return response($finalRegisterResponse)->header('jwt', $jwt);
     }
 
     public function updateUserPersonalInformation($params)

@@ -273,9 +273,15 @@ class OwlFactory extends OwlClient
                     'user_token' => $userToken
                 ]
             ];
-
-            $owlInstance = OwlClient::getInstance();
-            $userDetailResponse = $owlInstance->owlGetRequest($userDetailUrl, $params);
+//            @TODO get access to user detail endpoint
+            if(env('MOCK')) {
+                $owlInstance = OwlClient::getInstance();
+                $userDetailResponse = $owlInstance->owlGetRequest($userDetailUrl, $params);
+            } else {
+                if(file_exists(config_path(). '/Mocks/user_detail.php')) {
+                    $userDetailResponse = Config::get('Mocks.user_detail');
+                }
+            }
         } else {
             $logMessage['OwlFactory->getUserDetail']['Valid_Token'] = 'Invalid User Token Endpoint';
             $this->logFactory->writeErrorLog($logMessage);
