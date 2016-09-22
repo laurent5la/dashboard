@@ -3,18 +3,20 @@ namespace App\Lib\Dashboard\Owl;
 
 use App\Factory\LogFactory;
 use App\Lib\Dashboard\Owl\Exception\UnableToRefreshAccessTokenException;
+use App\Traits\Logging;
 use GuzzleHttp\Client as GuzzleClient;
 use Cache;
 
 class OwlTokenManager
 {
+    use Logging;
+
     private $owlConfig;
     private $cacheKeyForOWLToken;
     private $cacheKeyForOWLRefreshToken;
     private $clientID;
     private $clientSecret;
     private $guzzleClient;
-    private $logFactory;
 
 
     public function __construct()
@@ -25,16 +27,15 @@ class OwlTokenManager
         $this->cacheKeyForOWLToken = 'OWL-TOKEN' . '-' . $this->clientID;
         $this->cacheKeyForOWLRefreshToken = 'OWL-REFRESH-TOKEN' . '-' . $this->clientID;
         $this->guzzleClient = new GuzzleClient();
-        $this->logFactory = new LogFactory();
     }
 
     public function getAccessToken()
     {
         if (Cache::has($this->cacheKeyForOWLToken)) {
-            $this->logFactory->writeInfoLog("retrieving access token from cache");
+            $this->info("retrieving access token from cache");
             return Cache::get($this->cacheKeyForOWLToken);
         } else {
-            $this->logFactory->writeInfoLog("refreshing access token");
+            $this->info("refreshing access token");
 
             $accessToken = $this->refreshAccessToken();
             return $accessToken;
@@ -75,7 +76,7 @@ class OwlTokenManager
                 Cache::put($this->cacheKeyForOWLToken, $response['access_token'], 24 * 60);
                 return $response['access_token'];
             }
-            $this->logError('Unable to return Access Token from OWL. Attempt ' . strval($i + 1));
+            $this->error('Unable to return Access Token from OWL. Attempt ' . strval($i + 1));
         }
         throw new UnableToRefreshAccessTokenException("Unable to refresh access token after $tries attempts.");
     }

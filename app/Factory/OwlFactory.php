@@ -4,6 +4,7 @@ namespace App\Factory;
 
 use App\Lib\Dashboard\Owl\OwlClient;
 use App\Models\Helpers\UserHelper;
+use App\Traits\Logging;
 use Session;
 use Config;
 
@@ -17,15 +18,16 @@ use Config;
  */
 class OwlFactory extends OwlClient
 {
+    use Logging;
+
     private $config;
     private $userToken = '';
-    private $logFactory;
     private $userActivities = [];
+    private $logMessage = [];
 
     public function __construct()
     {
         $this->config = app()['config'];
-        $this->logFactory = new LogFactory();
     }
 
     public function retrieveUserToken($email, $password)
@@ -53,14 +55,14 @@ class OwlFactory extends OwlClient
             else
             {
                 $logMessage['OwlFactory->userLogin']['Email'] = 'Invalid Email';
-                $this->logFactory->writeErrorLog($logMessage);
+                $this->error($logMessage);
             }
 
         }
         else
         {
             $logMessage['OwlFactory->userLogin']['Login_Endpoint'] = 'Invalid Login Endpoint';
-            $this->logFactory->writeErrorLog($logMessage);
+            $this->error($logMessage);
         }
         return $owlPostClient;
 
@@ -90,7 +92,7 @@ class OwlFactory extends OwlClient
             Session::set('user_activity', $this->userActivities);
         } else {
 			$this->logMessage['OwlFactory->userLogout']['Logout_Endpoint'] = 'Invalid Logout Endpoint';
-			$this->logFactory->writeErrorLog($this->logMessage);
+			$this->error($this->logMessage);
 		}
         return $owlPostClient;
 	}
@@ -108,7 +110,7 @@ class OwlFactory extends OwlClient
         $userRegistrationValidation = $userHelper->areValidRegisterParams($params);
         $registrationPostRequest = [];
         if(!empty($userRegistrationValidation)) {
-            $this->logFactory->writeErrorLog($userRegistrationValidation);
+            $this->error($userRegistrationValidation);
         } else {
             if($this->isValidEndpoint($userRegistrationURL)) {
                 $userRegisterParams = [
@@ -124,7 +126,7 @@ class OwlFactory extends OwlClient
                 Session::set('user_activity', $this->userActivities);
             } else {
                 $logMessage['OwlFactory->userRegister']['Registration_Endpoint'] = 'Invalid Registration Endpoint';
-                $this->logFactory->writeErrorLog($logMessage);
+                $this->error($logMessage);
             }
         }
         return $registrationPostRequest;
@@ -140,7 +142,7 @@ class OwlFactory extends OwlClient
         $userPersonalUpdateURL = $this->config->get('owl_endpoints.user_personal_update');
         $userPersonalUpdateValidation = $this->helper->areValidUpdateParams($params);
         if(!empty($userPersonalUpdateValidation)) {
-            $this->logFactory->writeErrorLog($userPersonalUpdateValidation);
+            $this->error($userPersonalUpdateValidation);
         } else {
             if ($this->isValidEndpoint($userPersonalUpdateURL)) {
                 $personalUpdateParams = array(
@@ -160,7 +162,7 @@ class OwlFactory extends OwlClient
                 return $personalPostRequest;
             } else {
                 $this->logMessage['OwlFactory->userPersonalUpdate']['Personal_Update_Endpoint'] = 'Invalid Personal Update Endpoint';
-                $this->logFactory->writeErrorLog($this->logMessage);
+                $this->error($this->logMessage);
                 return null;
             }
         }
@@ -183,7 +185,7 @@ class OwlFactory extends OwlClient
         }
         else {
             $logMessage['OwlFactory->isUserTokenValid']['Valid_Token'] = 'Invalid User Token Endpoint';
-            $this->logFactory->writeErrorLog($logMessage);
+            $this->error($logMessage);
         }
 
         return $response;
@@ -215,14 +217,14 @@ class OwlFactory extends OwlClient
             ];
 
             $logMessage["OwlFactory->sendResetPasswordEmail"] = $params;
-            $this->logFactory->writeInfoLog($logMessage);
+            $this->info($logMessage);
 
             $owlInstance = OwlClient::getInstance();
             $resetPasswordResponse = $owlInstance->owlPostRequest($resetPasswordURL, $params);
             Session::set('user_activity', $this->userActivities);
         } else {
             $logMessage['OwlFactory->sendResetPasswordEmail']['Reset_Password_Endpoint'] = 'Invalid Reset Password Endpoint';
-            $this->logFactory->writeErrorLog($logMessage);
+            $this->error($logMessage);
         }
         return $resetPasswordResponse;
     }
@@ -257,7 +259,7 @@ class OwlFactory extends OwlClient
             Session::set('user_activity', $this->userActivities);
         } else {
             $logMessage['OwlFactory->userLogin']['Change_Password_Endpoint'] = 'Invalid Change Password Endpoint';
-            $this->logFactory->writeErrorLog($logMessage);
+            $this->error($logMessage);
         }
         return $changePasswordResponse;
     }
@@ -284,7 +286,7 @@ class OwlFactory extends OwlClient
             }
         } else {
             $logMessage['OwlFactory->getUserDetail']['Valid_Token'] = 'Invalid User Token Endpoint';
-            $this->logFactory->writeErrorLog($logMessage);
+            $this->error($logMessage);
         }
 
         return $userDetailResponse;
