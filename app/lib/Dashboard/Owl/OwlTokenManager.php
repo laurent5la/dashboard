@@ -1,7 +1,6 @@
 <?php
 namespace App\Lib\Dashboard\Owl;
 
-use App\Factory\LogFactory;
 use App\Lib\Dashboard\Owl\Exception\UnableToRefreshAccessTokenException;
 use App\Traits\Logging;
 use GuzzleHttp\Client as GuzzleClient;

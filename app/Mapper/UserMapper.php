@@ -1,7 +1,7 @@
 <?php
 namespace App\Mapper;
+
 use App\Factory\UserObjectFactory;
-use App\Factory\LogFactory;
 use App\Factory\OwlFactory;
 use App\Factory\JwtLoginDashboardFactory;
 use App\Traits\Logging;
