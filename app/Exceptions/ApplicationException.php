@@ -11,4 +11,14 @@ class ApplicationException extends \Exception
             parent::__construct($message, $code);
         }
     }
+
+    public function getJson()
+    {
+        return json_encode([
+            "message" => $this->message,
+            "code" => $this->code,
+            "file" => $this->file,
+            "line" => $this->line
+        ]);
+    }
 }

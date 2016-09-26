@@ -28,7 +28,7 @@ class Handler extends ExceptionHandler {
 	public function report(Exception $e)
 	{
 		if ($e instanceof ApplicationException) {
-			$this->error($e->getMessage() . "\n" . $e->getTraceAsString());
+			$this->error(get_class($e) . " thrown:\n" . $e->getJson());
 		} else {
 			//Handle uncaught third party exceptions.
 			$this->error("***Uncaught Third Party Exception***");
@@ -45,10 +45,11 @@ class Handler extends ExceptionHandler {
 	 */
 	public function render($request, Exception $e)
 	{
-		//TODO: Implement error rendering logic here.
-		//i.e. Render full stack trace in qa, stg. Render error message only in prd.
-		//Create error response for front end. e.g. {"code": 500, "error": "message", "trace":"${e->getTrace()}"}
-		return parent::render($request, $e);
+        if ($e instanceof ApplicationException) {
+            return $e->getJson();
+        } else {
+            //Uncaught third party exceptions.
+            return parent::render($request, $e);
+        }
 	}
-
 }
