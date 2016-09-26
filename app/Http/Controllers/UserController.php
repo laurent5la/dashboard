@@ -1,6 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Exceptions\EmailParamMissingException;
+use App\Exceptions\InvalidInputParametersException;
 use App\Mapper\UserMapper;
 use Request;
 use Config;
@@ -25,6 +27,7 @@ class UserController extends Controller {
     /**
      * Backend action to change the login a user.
      * @return array
+     * @throws InvalidInputParametersException
      * @since 16.12
      * @author aprakash
      */
@@ -34,7 +37,7 @@ class UserController extends Controller {
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params)) {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured');
+            throw new InvalidInputParametersException('Input parameters are not properly structured');
         } else {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
@@ -42,13 +45,12 @@ class UserController extends Controller {
             $this->timingEnd();
             return $userObject;
         }
-
-        return [];
     }
 
     /**
      * Backend action to change the register a user.
      * @return array
+     * @throws InvalidInputParametersException
      * @since 16.12
      * @author aprakash
      */
@@ -59,18 +61,14 @@ class UserController extends Controller {
 
         if(!is_array($params))
         {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured');
-        }
-        else
-        {
+            throw new InvalidInputParametersException('Input parameters are not properly structured');
+        } else {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
             $userObject = $userMapper->setUser($secureParams);
             $this->timingEnd();
             return $userObject;
         }
-
-        return [];
     }
 
 
@@ -87,6 +85,8 @@ class UserController extends Controller {
      * Backend action to send the reset password request
      *
      * @return array
+     * @throws InvalidInputParametersException
+     * @throws EmailParamMissingException
      * @since 16.12
      * @author mvalenzuela
      */
@@ -96,20 +96,17 @@ class UserController extends Controller {
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params)) {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured');
+            throw new InvalidInputParametersException('Input parameters are not properly structured');
+        } elseif(isset($params['email']) && strlen($params['email'])!=0) {
+            $this->setParamsForResetPassword($params);
+            $this->timingStart(__METHOD__);
+            $userMapper = $this->getUserMapper();
+            $userObject = $userMapper->forgotPassword($secureParams);
+            $this->timingEnd();
+            return $userObject;
         } else {
-            if(isset($params['email']) && strlen($params['email'])!=0) {
-                $this->setParamsForResetPassword($params);
-                $this->timingStart(__METHOD__);
-                $userMapper = $this->getUserMapper();
-                $userObject = $userMapper->forgotPassword($secureParams);
-                $this->timingEnd();
-                return $userObject;
-            } else {
-                $this->logError(__METHOD__, 'Email key does not exist for Forgot Password.');
-            }
+            throw new EmailParamMissingException('Email key does not exist in '. __METHOD__);
         }
-        return [];
     }
 
     /**
@@ -128,6 +125,7 @@ class UserController extends Controller {
     /**
      * Backend action to change the password after reset request.
      * @return array
+     * @throws InvalidInputParametersException
      * @since 16.12
      * @author mvalenzuela
      */
@@ -138,7 +136,7 @@ class UserController extends Controller {
 
         if(!is_array($params))
         {
-            $this->logError(__METHOD__, 'Input parameters are not properly structured');
+            throw new InvalidInputParametersException('Input parameters are not properly structured');
         }
         else
         {
@@ -148,8 +146,6 @@ class UserController extends Controller {
             $this->timingEnd();
             return $userObject;
         }
-
-        return [];
     }
 
     /**

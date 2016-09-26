@@ -12,19 +12,6 @@ abstract class Controller extends BaseController {
     protected $logTime = array();
 
     /**
-     * Called to log an error.
-     * @param String $method
-     * @param String $errorMessage
-     * @since 16.13
-     * @author mvalenzuela
-     */
-    protected function logError($method, $errorMessage)
-    {
-        $logMessage[__CLASS__ . '->' . $method] = $errorMessage;
-        $this->error($logMessage);
-    }
-
-    /**
      * Called to start timing for timing log
      * @param String $method
      */

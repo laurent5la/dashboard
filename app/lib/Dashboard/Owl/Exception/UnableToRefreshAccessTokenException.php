@@ -1,7 +1,9 @@
 <?php
 namespace App\Lib\Dashboard\Owl\Exception;
 
-class UnableToRefreshAccessTokenException extends \Exception
+use App\Exceptions\ApplicationException;
+
+class UnableToRefreshAccessTokenException extends ApplicationException
 {
     public function __construct($message)
     {
