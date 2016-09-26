@@ -3,6 +3,7 @@
 use Exception;
 use App\Traits\Logging;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Response;
 
 class Handler extends ExceptionHandler {
 
@@ -29,10 +30,13 @@ class Handler extends ExceptionHandler {
 	{
 		if ($e instanceof ApplicationException) {
 			$this->error(get_class($e) . " thrown:\n" . $e->getJson());
+            if ($previous = $e->getPrevious()) {
+                $this->error(get_class($e) . " previous:\n" . $this->getGeneralExceptionJson($previous));
+            }
 		} else {
 			//Handle uncaught third party exceptions.
 			$this->error("***Uncaught Third Party Exception***");
-			$this->error($e->getMessage() . "\n" . $e->getTraceAsString());
+			$this->error(get_class($e) . " thrown:\n" . $this->getGeneralExceptionJson($e));
 		}
 	}
 
@@ -46,10 +50,31 @@ class Handler extends ExceptionHandler {
 	public function render($request, Exception $e)
 	{
         if ($e instanceof ApplicationException) {
-            return $e->getJson();
+            $response = new Response();
+            $response->setContent($e->getJson());
+            $response->setStatusCode($e->getCode());
+            return $response;
         } else {
-            //Uncaught third party exceptions.
-            return parent::render($request, $e);
+            $response = new Response();
+            $response->setContent($this->getGeneralExceptionJson($e));
+            $response->setStatusCode($e->getCode());
+            return $response;
         }
 	}
+
+    /**
+     * Returns json string of general exception that does not have getJson() method.
+     *
+     * @param Exception $e
+     * @return string
+     */
+    private function getGeneralExceptionJson(\Exception $e)
+    {
+        return json_encode([
+            "message" => $e->getMessage(),
+            "code" => $e->getCode(),
+            "file" => $e->getFile(),
+            "line" => $e->getLine()
+        ]);
+    }
 }

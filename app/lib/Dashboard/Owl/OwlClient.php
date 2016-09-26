@@ -150,9 +150,10 @@ class OwlClient
         } catch (ClientException $e) {
             $this->error("Error in OwlClient.php - OwlGetRequest - ".$e->getMessage());
         }
-        if (isset($response)) {
+
+        if (isset($response))
             return $response;
-        }
+
         return [];
     }
 
@@ -206,6 +207,7 @@ class OwlClient
         $getOWLEndpoints = Config::get("owl_endpoints");
         if(in_array($url,$getOWLEndpoints))
             return true;
+
         return false;
     }
 }

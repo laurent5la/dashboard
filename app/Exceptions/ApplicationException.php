@@ -3,15 +3,13 @@ namespace App\Exceptions;
 
 class ApplicationException extends \Exception
 {
-    public function __construct($message, $code = null)
-    {
-        if (is_null($code)) {
-            parent::__construct($message);
-        } else {
-            parent::__construct($message, $code);
-        }
-    }
-
+    /**
+     * Returns json string with message, code, file, and line.
+     *
+     * @return string
+     * @author mvalenzuela
+     * @since 16.12
+     */
     public function getJson()
     {
         return json_encode([

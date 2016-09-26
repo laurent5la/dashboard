@@ -61,7 +61,7 @@ class UserController extends Controller {
 
         if(!is_array($params))
         {
-            throw new InvalidInputParametersException('Input parameters are not properly structured');
+            throw new InvalidInputParametersException('Input parameters are not properly structured', 403);
         } else {
             $this->timingStart(__METHOD__);
             $userMapper = new UserMapper();
@@ -96,7 +96,7 @@ class UserController extends Controller {
         $secureParams = $this->cleanParams($params);
 
         if(!is_array($params)) {
-            throw new InvalidInputParametersException('Input parameters are not properly structured');
+            throw new InvalidInputParametersException('Input parameters are not properly structured', 403);
         } elseif(isset($params['email']) && strlen($params['email'])!=0) {
             $this->setParamsForResetPassword($params);
             $this->timingStart(__METHOD__);
@@ -105,7 +105,7 @@ class UserController extends Controller {
             $this->timingEnd();
             return $userObject;
         } else {
-            throw new EmailParamMissingException('Email key does not exist in '. __METHOD__);
+            throw new EmailParamMissingException('Email key does not exist in '. __METHOD__, 403);
         }
     }
 
@@ -136,7 +136,7 @@ class UserController extends Controller {
 
         if(!is_array($params))
         {
-            throw new InvalidInputParametersException('Input parameters are not properly structured');
+            throw new InvalidInputParametersException('Input parameters are not properly structured', 403);
         }
         else
         {

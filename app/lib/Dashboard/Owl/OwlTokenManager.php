@@ -77,6 +77,6 @@ class OwlTokenManager
             }
             $this->error('Unable to return Access Token from OWL. Attempt ' . strval($i + 1));
         }
-        throw new UnableToRefreshAccessTokenException("Unable to refresh access token after $tries attempts.");
+        throw new UnableToRefreshAccessTokenException("Unable to refresh access token after $tries attempts.", 500);
     }
 }
