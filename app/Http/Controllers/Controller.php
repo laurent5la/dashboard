@@ -44,7 +44,7 @@ abstract class Controller extends BaseController {
         $this->warning($logMessage);
     }
 
-    private function formatStandardResponse(&$array, $status, $payload, $messages)
+    protected function formatStandardResponse(&$array, $status, $payload, $messages)
     {
         $array['status'] = $status;
         $array['payload'] = $payload;

@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\EmailParamMissingException;
 use App\Exceptions\InvalidInputParametersException;
+use App\Factory\UserObjectFactory;
 use App\Mapper\UserMapper;
 use Request;
 use Config;
@@ -16,12 +17,23 @@ class UserController extends Controller {
     /** @var  UserMapper $userMapper */
     private $userMapper;
 
+    private $userFactory;
+
     private function getUserMapper()
     {
         if (is_null($this->userMapper)) {
             $this->userMapper = new UserMapper();
         }
         return $this->userMapper;
+    }
+
+    private function getUserFactory()
+    {
+        if (is_null($this->userFactory)) {
+            $this->userFactory = new UserObjectFactory();
+        }
+
+        return $this->userFactory;
     }
 
     /**
@@ -35,15 +47,24 @@ class UserController extends Controller {
     {
         $params = Request::all();
         $secureParams = $this->cleanParams($params);
+        $jwt = null;
 
         if(!is_array($params)) {
             throw new InvalidInputParametersException('Input parameters are not properly structured');
         } else {
             $this->timingStart(__METHOD__);
-            $userMapper = new UserMapper();
-            $userObject = $userMapper->authenticateUser($secureParams);
+            $userFactory = $this->getUserFactory();
+
+            $userObject = $userFactory->authenticateUser($secureParams, $jwt);
             $this->timingEnd();
-            return $userObject;
+            $standardResponse = [];
+            $this->formatStandardResponse(
+                $standardResponse,
+                Config::get('Enums.Status.SUCCESS'),
+                $userObject,
+                []
+            );
+            return response($standardResponse, 200, ["Authorization" => "Bearer $jwt JWT"]) ;
         }
     }
 
@@ -58,16 +79,24 @@ class UserController extends Controller {
     {
         $params = Request::all();
         $secureParams = $this->cleanParams($params);
+        $jwt = null;
 
         if(!is_array($params))
         {
             throw new InvalidInputParametersException('Input parameters are not properly structured', 403);
         } else {
             $this->timingStart(__METHOD__);
-            $userMapper = new UserMapper();
-            $userObject = $userMapper->setUser($secureParams);
+            $userFactory = $this->getUserFactory();
+            $userObject = $userFactory->setUser($secureParams, $jwt);
             $this->timingEnd();
-            return $userObject;
+            $standardResponse = [];
+            $this->formatStandardResponse(
+                $standardResponse,
+                Config::get('Enums.Status.SUCCESS'),
+                $userObject,
+                []
+            );
+            return response($standardResponse, 200, ["Authorization" => "Bearer $jwt JWT"]);
         }
     }
 
