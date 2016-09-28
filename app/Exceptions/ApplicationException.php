@@ -1,7 +1,7 @@
 <?php
 namespace App\Exceptions;
 
-class ApplicationException extends \Exception
+abstract class ApplicationException extends \Exception
 {
     /**
      * Returns json string with message, code, file, and line.
@@ -18,5 +18,15 @@ class ApplicationException extends \Exception
             "file" => $this->file,
             "line" => $this->line
         ]);
+    }
+
+    public function getArray()
+    {
+        return [
+            "message" => $this->message,
+            "code" => $this->code,
+            "file" => $this->file,
+            "line" => $this->line
+        ];
     }
 }

@@ -51,13 +51,23 @@ class Handler extends ExceptionHandler {
 	{
         if ($e instanceof ApplicationException) {
             $response = new Response();
-            $response->setContent($e->getJson());
+            $response->setContent(
+                json_encode([
+                    "status" => 0,
+                    "payload" => $e->getArray(),
+                    "messages" => []])
+            );
             $response->setStatusCode($e->getCode());
             return $response;
         } else {
             $response = new Response();
-            $response->setContent($this->getGeneralExceptionJson($e));
-            $response->setStatusCode($e->getCode());
+            $response->setContent(
+                json_encode([
+                    "status" => 0,
+                    "payload" => $this->getGeneralExceptionArray($e),
+                    "messages" => []])
+            );
+            $response->setStatusCode(500);
             return $response;
         }
 	}
@@ -76,5 +86,21 @@ class Handler extends ExceptionHandler {
             "file" => $e->getFile(),
             "line" => $e->getLine()
         ]);
+    }
+
+    /**
+     * Returns array of important exception fields for inclusion in response.
+     *
+     * @param Exception $e
+     * @return array
+     */
+    private function getGeneralExceptionArray(\Exception $e)
+    {
+        return [
+            "message" => $e->getMessage(),
+            "code" => $e->getCode(),
+            "file" => $e->getFile(),
+            "line" => $e->getLine()
+        ];
     }
 }

@@ -10,10 +10,14 @@
 | and give it the controller to call when that URI is requested.
 |
 */
-Route::group(['prefix' => 'v1'],  function() {
-    Route::post('user/reset-password', 'UserController@resetPassword');
-    Route::post('user/change-password', 'UserController@changePassword');
-    Route::post('user/login', 'UserController@login');
-    Route::post('user/logout', 'UserController@logout');
-    Route::post('user/register', 'UserController@register');
+Route::group(['prefix' => 'api/v1'],  function() {
+    Route::get('login', 'UserController@login');
+    Route::get('logout', 'UserController@logout');
+    Route::post('register', 'UserController@register');
+    Route::post('reset-password', 'UserController@resetPassword');
+    Route::post('change-password', 'UserController@changePassword');
+    Route::get('payment-methods', 'PaymentMethodController@getPaymentMethods');
+    Route::get('payment-method', 'PaymentMethodController@getPaymentMethod');
+    Route::put('payment-method', 'PaymentMethodController@updatePaymentMethod');
+    Route::delete('payment-method', 'PaymentMethodController@deletePaymentMethod');
 });

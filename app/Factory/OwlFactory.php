@@ -239,6 +239,7 @@ class OwlFactory extends OwlClient
     {
         if(is_null(Session::get('user_activity')))
             Session::set('user_activity', []);
+
         $userSession = Session::get('user_activity');
         $this->userActivities = empty($userSession) ? array() : $userSession;
         array_push($this->userActivities, date("Y-m-d H:i:s")." Action 6 - User is trying to change the password");

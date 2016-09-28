@@ -43,4 +43,11 @@ abstract class Controller extends BaseController {
         $logMessage[__CLASS__ . '->' . $method] = $warningMessage;
         $this->warning($logMessage);
     }
+
+    private function formatStandardResponse(&$array, $status, $payload, $messages)
+    {
+        $array['status'] = $status;
+        $array['payload'] = $payload;
+        $array['messages'] = $messages;
+    }
 }
