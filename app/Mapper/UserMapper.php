@@ -27,8 +27,6 @@ class UserMapper
         return $userObject;
     }
 
-
-
     public function updateUserPersonalInformation($params)
     {
         $userFactory = new UserObjectFactory();
@@ -55,12 +53,5 @@ class UserMapper
         $userFactory = new UserObjectFactory();
         $userObject = $userFactory->changePassword($params);
         return $userObject;
-    }
-
-    private function formatStandardResponse(&$array, $status, $payload, $messages)
-    {
-        $array['status'] = $status;
-        $array['payload'] = $payload;
-        $array['messages'] = $messages;
     }
 }

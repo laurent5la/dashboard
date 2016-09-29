@@ -7,6 +7,7 @@ use App\Lib\Dashboard\Helper\CrossCookie;
 use App\Models\User;
 use App\Traits\Logging;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Response;
 use App\Models\Helpers\UserHelper;
 use App\Exceptions\InvalidUserTokenStatusException;
 use App\Exceptions\NotFoundErrorException;
@@ -42,7 +43,7 @@ class UserObjectFactory
      *      @var string $password
      * }
      *
-     * @return Illuminate\Http\Response
+     * @return Array payload for user detail response
      * @throws InvalidUserTokenStatusException
      * @throws NotFoundErrorException
      * @throws ServerErrorException
@@ -108,7 +109,7 @@ class UserObjectFactory
      *     @var string $password password of the user
      * }
      *
-     * @return JSON UserInfoObject $finalRegisterResponse Final User Response Object consisting of first_name, last_name, email, and password
+     * @return Array
      * @throws InvalidUserTokenStatusException
      * @throws NotFoundErrorException
      * @throws ServerErrorException
@@ -119,7 +120,6 @@ class UserObjectFactory
     {
         $owlFactory = new OwlFactory();
         $retrieveUserToken = $owlFactory->userRegister($params);
-        $finalRegisterResponse = [];
         $jwt = "";
 
         if (isset($retrieveUserToken['meta'])) {
@@ -139,12 +139,6 @@ class UserObjectFactory
                         //@TODO format userdetail information with models and objectfactories
 
                         $this->info("Register Success");
-                        $finalRegisterResponse = [];
-                        $this->formatStandardResponse(
-                            $finalRegisterResponse,
-                            $this->config->get('Enums.Status.SUCCESS'),
-                            $userDetail['response'],
-                            []);
                         $jwt = JwtLoginDashboardFactory::createToken($basicUserInfoArray["response"])->__toString();
                     } else {
                         throw new InvalidUserTokenStatusException("Invalid User Token status", 500);
@@ -174,7 +168,6 @@ class UserObjectFactory
         }else{
             throw new ServerErrorException("Register Failure", 500);
         }
-        //return response($finalRegisterResponse)->header('Authorization', "Bearer $jwt JWT");
         return $userDetail['response'];
     }
 
